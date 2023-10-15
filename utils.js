@@ -73,3 +73,17 @@ export function generateUniqueGameId() {
 
   return gameId;
 }
+
+export async function updateMessage(responseToken, messageContent) {
+  try {
+    await DiscordRequest(
+      `webhooks/${process.env.APP_ID}/${responseToken}/messages/@original`,
+      {
+        method: "PATCH",
+        body: messageContent,
+      }
+    );
+  } catch (err) {
+    console.error("Error updating message:", err);
+  }
+}

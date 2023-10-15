@@ -42,6 +42,13 @@ const START_COMMAND = {
   ],
 };
 
+// Cancel active game command
+const CANCEL_COMMAND = {
+  name: 'cancel',
+  description: 'Cancel your current active game',
+  type: 1,
+};
+
 // Test Database command
 const TEST_DATABASE_COMMAND = {
   name: 'database_test',
@@ -49,6 +56,6 @@ const TEST_DATABASE_COMMAND = {
   type: 1,
 };
 
-const ALL_COMMANDS = [TEST_COMMAND, START_COMMAND, TEST_DATABASE_COMMAND];
+const ALL_COMMANDS = [TEST_COMMAND, START_COMMAND, CANCEL_COMMAND, TEST_DATABASE_COMMAND];
 
 InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);

@@ -53,8 +53,44 @@ export async function insertActiveGame(db, gameId, hostUserId, maxPlayers) {
       if (err) {
         console.error("Error inserting game data:", err);
       } else {
-        console.log("Data inserted successfully!");
+        console.log("Game data inserted successfully!");
       }
     }
   );
+}
+
+// insert message data to messages
+export async function insertMessageData(db, messageId, responseToken) {
+  db.run(
+    "INSERT INTO messages (message_id, response_token) VALUES (?, ?)",
+    [messageId, responseToken],
+    (err) => {
+      if (err) {
+        console.error("Error inserting message data:", err);
+      } else {
+        console.log("Message data inserted successfully!");
+      }
+    }
+  );
+}
+
+// get response token from message ID
+export async function getResponseToken(db, messageId) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      "SELECT response_token FROM messages WHERE message_id = ?",
+      [messageId],
+      (err, row) => {
+        if (err) {
+          console.error("Error retrieving response token:", err);
+          reject(err);
+        } else if (row) {
+          resolve(row.response_token);
+        } else {
+          resolve(null);
+          console.log("No response token found for this message ID");
+        }
+      }
+    );
+  });
 }

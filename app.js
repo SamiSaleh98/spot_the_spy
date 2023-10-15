@@ -12,14 +12,18 @@ import {
   getRandomEmoji,
   DiscordRequest,
   generateUniqueGameId,
+  updateMessage,
 } from "./utils.js";
 
-import { createInitialTables, getActiveGames, insertActiveGame } from "./database.js";
+import { createInitialTables, getActiveGames, insertActiveGame, insertMessageData, getResponseToken } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
 import sqlite3 from "sqlite3";
 
 const db = new sqlite3.Database("./database.sqlite3");
+
+let parentMessageId;
+let gameId;
 
 console.log("Before creating tables");
 // Create database tables if they don't exist
@@ -44,6 +48,9 @@ const activeGames = {};
 app.post("/interactions", async function (req, res) {
   // Interaction type and data
   const { type, id, data, member } = req.body;
+
+  // global variable for User ID
+  //const userId = member.user.id;
 
   /**
    * Handle verification requests
@@ -86,16 +93,17 @@ app.post("/interactions", async function (req, res) {
     else if (name === "start" && id) {
       console.log("Start command initiated");
 
+
       // fetch the number of players chosen by the user
       const maxPlayers = parseInt(data.options[0].value);
 
       // fetch the user ID
-      const userId = member.user.id;
+      const hostUserId = member.user.id;
 
       // check if host already has an active game running
       const games = await getActiveGames(db);
       console.log("getActiveGames selected");
-      const hostHasActiveGame = games.some((game) => game.host_user === userId);
+      const hostHasActiveGame = games.some((game) => game.host_user === hostUserId);
       if (hostHasActiveGame) {
         console.log("Host has an active game!");
         return res.send({
@@ -107,20 +115,65 @@ app.post("/interactions", async function (req, res) {
         });
       }
 
+      // insert message data into messages table
+      parentMessageId = req.body.id;
+      await insertMessageData(db, parentMessageId, req.body.token);
+      console.log("message data inserted!");
+
       console.log("Host has NO active games!");
-      const gameId = generateUniqueGameId();
+      // create game ID based on timestamp and a number
+      gameId = generateUniqueGameId();
 
       // insert game data into the active_games table
-      await insertActiveGame(db, gameId, userId, maxPlayers);
+      await insertActiveGame(db, gameId, hostUserId, maxPlayers);
       console.log("inserted active game data");
 
       // send interaction response
       return res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-            content: `<@${userId}> started a game with a maximum of ${maxPlayers} players!`,
+            content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!`,
         },
       });
+    } else if (name === "cancel") {
+      console.log("message ID:", parentMessageId);
+      console.log("game ID:", gameId);
+      // check if the user is already running a game or not
+      const games = await getActiveGames(db);
+      const hasActiveGame = games.some((game) => game.host_user === member.user.id);
+      if (!hasActiveGame) {
+        console.log("User has no active games!");
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: "You are not hosting a game to cancel!",
+            flags: InteractionResponseFlags.EPHEMERAL,
+          },
+        });
+      }
+
+      // fetch response token from parent message ID
+      const responseTokenFromParentMessage = await getResponseToken(db, parentMessageId);
+      if (!responseTokenFromParentMessage) {
+        console.error("No stored response token found from parent message");
+        return;
+      }
+
+      // send game cancelation confirmation
+      res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: `Game ID ${gameId} has been canceled!`,
+        },
+      });
+
+      // update parent message
+      const updateParentMessageContent = {
+        content: `<@${member.user.id}> canceled this game. Use the command /start to start a new one`,
+        components: [],
+      };
+      await updateMessage(responseTokenFromParentMessage, updateParentMessageContent);
+
     } else if (name === "database_test") {
       db.run(
         `CREATE TABLE IF NOT EXISTS active_games (

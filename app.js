@@ -13,9 +13,7 @@ import {
   DiscordRequest,
 } from "./utils.js";
 
-import {
-  createInitialTables
-} from "./database.js";
+import { createInitialTables } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
 import sqlite3 from "sqlite3";
@@ -74,18 +72,22 @@ app.post("/interactions", async function (req, res) {
           host_user TEXT,
           max_players INTEGER
         )`,
-        function(err) {
+        function (err) {
           if (err) {
-            console.error('Error creating table:', err);
+            console.error("Error creating table:", err);
           } else {
             // Table created successfully, now insert data
-            db.run("INSERT INTO active_games (game_id, host_user, max_players) VALUES (?, ?, ?)", ['123455', 'SamiSaleh', 10], function(err) {
-              if (err) {
-                console.error('Error inserting data:', err);
-              } else {
-                console.log('Data inserted successfully.');
+            db.run(
+              "INSERT INTO active_games (game_id, host_user, max_players) VALUES (?, ?, ?)",
+              ["123455", "SamiSaleh", 10],
+              function (err) {
+                if (err) {
+                  console.error("Error inserting data:", err);
+                } else {
+                  console.log("Data inserted successfully.");
+                }
               }
-            });
+            );
           }
         }
       );

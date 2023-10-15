@@ -19,7 +19,9 @@ export async function createInitialTables(db) {
   db.run(`
         CREATE TABLE IF NOT EXISTS messages (
             message_id INTEGER PRIMARY KEY,
-            response_token TEXT
+            host_user TEXT,
+            response_token TEXT,
+            FOREIGN KEY (host_user) REFERENCES active_games (host_user)
         )
     `);
 }
@@ -60,10 +62,10 @@ export async function insertActiveGame(db, gameId, hostUserId, maxPlayers) {
 }
 
 // insert message data to messages
-export async function insertMessageData(db, messageId, responseToken) {
+export async function insertMessageData(db, messageId, hostUserId, responseToken) {
   db.run(
-    "INSERT INTO messages (message_id, response_token) VALUES (?, ?)",
-    [messageId, responseToken],
+    "INSERT INTO messages (message_id, host_user, response_token) VALUES (?, ?, ?)",
+    [messageId, hostUserId, responseToken],
     (err) => {
       if (err) {
         console.error("Error inserting message data:", err);
@@ -74,12 +76,12 @@ export async function insertMessageData(db, messageId, responseToken) {
   );
 }
 
-// get response token from message ID
-export async function getResponseToken(db, messageId) {
+// get response token from message ID and Hostuser ID
+export async function getResponseToken(db, hostUserId) {
   return new Promise((resolve, reject) => {
     db.get(
-      "SELECT response_token FROM messages WHERE message_id = ?",
-      [messageId],
+      "SELECT response_token FROM messages WHERE host_user = ?",
+      [hostUserId],
       (err, row) => {
         if (err) {
           console.error("Error retrieving response token:", err);
@@ -93,4 +95,19 @@ export async function getResponseToken(db, messageId) {
       }
     );
   });
+}
+
+// delete active game from active_games
+export async function deleteActiveGame(db, gameId, hostUserId) {
+  db.run(
+    "DELETE FROM active_games WHERE game_id = ? AND host_user = ?",
+    [gameId, hostUserId],
+    (err) => {
+      if (err) {
+        console.error("Error deleting active game", err);
+      } else {
+        console.log("Deleting from active_games successfull!");
+      }
+    }
+  );
 }

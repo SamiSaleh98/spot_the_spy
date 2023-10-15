@@ -15,15 +15,15 @@ import {
   updateMessage,
 } from "./utils.js";
 
-import { createInitialTables, getActiveGames, insertActiveGame, insertMessageData, getResponseToken } from "./database.js";
+import { createInitialTables, getActiveGames, insertActiveGame, insertMessageData, getResponseToken, deleteActiveGame } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
 import sqlite3 from "sqlite3";
 
 const db = new sqlite3.Database("./database.sqlite3");
 
-let parentMessageId;
-let gameId;
+//let parentMessageId;
+//let gameId;
 
 console.log("Before creating tables");
 // Create database tables if they don't exist
@@ -116,13 +116,13 @@ app.post("/interactions", async function (req, res) {
       }
 
       // insert message data into messages table
-      parentMessageId = req.body.id;
-      await insertMessageData(db, parentMessageId, req.body.token);
+      const MessageId = req.body.id;
+      await insertMessageData(db, MessageId, hostUserId, req.body.token);
       console.log("message data inserted!");
 
       console.log("Host has NO active games!");
       // create game ID based on timestamp and a number
-      gameId = generateUniqueGameId();
+      const gameId = generateUniqueGameId();
 
       // insert game data into the active_games table
       await insertActiveGame(db, gameId, hostUserId, maxPlayers);
@@ -136,8 +136,7 @@ app.post("/interactions", async function (req, res) {
         },
       });
     } else if (name === "cancel") {
-      console.log("message ID:", parentMessageId);
-      console.log("game ID:", gameId);
+      const hostUserId = member.user.id;
       // check if the user is already running a game or not
       const games = await getActiveGames(db);
       const hasActiveGame = games.some((game) => game.host_user === member.user.id);
@@ -152,12 +151,19 @@ app.post("/interactions", async function (req, res) {
         });
       }
 
-      // fetch response token from parent message ID
-      const responseTokenFromParentMessage = await getResponseToken(db, parentMessageId);
+      // fetch response token from parent message ID from the Host User
+      const responseTokenFromParentMessage = await getResponseToken(db, hostUserId);
       if (!responseTokenFromParentMessage) {
         console.error("No stored response token found from parent message");
         return;
       }
+
+      // get active game ID
+      const gameIdObj = games.find((game) => game.host_user === hostUserId);
+      const gameId = gameIdObj.game_id;
+      console.log("game ID:", gameId);
+      // delete active game from database table active_games
+      await deleteActiveGame(db, gameId, member.user.id);
 
       // send game cancelation confirmation
       res.send({

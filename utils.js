@@ -60,3 +60,16 @@ export function getRandomEmoji() {
 export function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
+export function generateUniqueGameId() {
+  // get current timestamp in milliseconds
+  const timestamp = new Date().getTime();
+
+  // generate a random number between 0 and 999
+  const randomNumber = Math.floor(Math.random() * 1000);
+
+  // combine the timestamp and random number
+  const gameId = `${timestamp}-${randomNumber}`;
+
+  return gameId;
+}

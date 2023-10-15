@@ -11,9 +11,10 @@ import {
   VerifyDiscordRequest,
   getRandomEmoji,
   DiscordRequest,
+  generateUniqueGameId,
 } from "./utils.js";
 
-import { createInitialTables, getActiveGames } from "./database.js";
+import { createInitialTables, getActiveGames, insertActiveGame } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
 import sqlite3 from "sqlite3";
@@ -105,6 +106,13 @@ app.post("/interactions", async function (req, res) {
           },
         });
       }
+
+      console.log("Host has NO active games!");
+      const gameId = generateUniqueGameId();
+
+      // insert game data into the active_games table
+      await insertActiveGame(db, gameId, userId, maxPlayers);
+      console.log("inserted active game data");
 
       // send interaction response
       return res.send({

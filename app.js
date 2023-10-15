@@ -1,14 +1,30 @@
-import 'dotenv/config';
-import express from 'express';
+import "dotenv/config";
+import express from "express";
 import {
   InteractionType,
   InteractionResponseType,
   InteractionResponseFlags,
   MessageComponentTypes,
   ButtonStyleTypes,
-} from 'discord-interactions';
-import { VerifyDiscordRequest, getRandomEmoji, DiscordRequest } from './utils.js';
-import { getShuffledOptions, getResult } from './game.js';
+} from "discord-interactions";
+import {
+  VerifyDiscordRequest,
+  getRandomEmoji,
+  DiscordRequest,
+} from "./utils.js";
+
+import {
+  createInitialTables
+} from "./database.js";
+
+import { getShuffledOptions, getResult } from "./game.js";
+import sqlite3 from "sqlite3";
+
+const db = new sqlite3.Database("./database.sqlite3");
+
+console.log("Before creating tables");
+await createInitialTables(db);
+console.log("After creating tables");
 
 // Create an express app
 const app = express();
@@ -23,7 +39,7 @@ const activeGames = {};
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
  */
-app.post('/interactions', async function (req, res) {
+app.post("/interactions", async function (req, res) {
   // Interaction type and data
   const { type, id, data } = req.body;
 
@@ -42,19 +58,41 @@ app.post('/interactions', async function (req, res) {
     const { name } = data;
 
     // "test" command
-    if (name === 'test') {
+    if (name === "test") {
       // Send a message into the channel where command was triggered from
       return res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
           // Fetches a random emoji to send from a helper function
-          content: 'hello world ' + getRandomEmoji(),
+          content: "hello world " + getRandomEmoji(),
         },
       });
+    } else if (name === "database_test") {
+      db.run(
+        `CREATE TABLE IF NOT EXISTS active_games (
+          game_id TEXT PRIMARY KEY,
+          host_user TEXT,
+          max_players INTEGER
+        )`,
+        function(err) {
+          if (err) {
+            console.error('Error creating table:', err);
+          } else {
+            // Table created successfully, now insert data
+            db.run("INSERT INTO active_games (game_id, host_user, max_players) VALUES (?, ?, ?)", ['123455', 'SamiSaleh', 10], function(err) {
+              if (err) {
+                console.error('Error inserting data:', err);
+              } else {
+                console.log('Data inserted successfully.');
+              }
+            });
+          }
+        }
+      );
     }
   }
 });
 
 app.listen(PORT, () => {
-  console.log('Listening on port', PORT);
+  console.log("Listening on port", PORT);
 });

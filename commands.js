@@ -40,6 +40,13 @@ const CHALLENGE_COMMAND = {
   type: 1,
 };
 
-const ALL_COMMANDS = [TEST_COMMAND, CHALLENGE_COMMAND];
+// Test Database command
+const TEST_DATABASE_COMMAND = {
+  name: 'database_test',
+  description: 'Test the database connection',
+  type: 1,
+};
+
+const ALL_COMMANDS = [TEST_COMMAND, CHALLENGE_COMMAND, TEST_DATABASE_COMMAND];
 
 InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);

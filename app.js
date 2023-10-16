@@ -161,13 +161,13 @@ app.post("/interactions", async function (req, res) {
               components: [
                 {
                   type: 2,
-                  custom_id: `join_button_${req.body.id}`,
+                  custom_id: `join_button_${gameId}`,
                   label: "Join",
                   style: 3,
                 },
                 {
                   type: 2,
-                  custom_id: `leave_button_${req.body.id}`,
+                  custom_id: `leave_button_${gameId}`,
                   label: "Leave",
                   style: 4,
                 },
@@ -267,6 +267,55 @@ app.post("/interactions", async function (req, res) {
           }
         }
       );
+    }
+  }
+
+  // message components
+  if (type === InteractionType.MESSAGE_COMPONENT) {
+
+    // fetch user ID who clicked the button
+    const userId = member.user.id;
+    
+    // custom_id set in payload when sending message component
+    const componentId = data.custom_id;
+
+    // if clicked button is "JOIN"
+    if (componentId.startsWith("join_button_")) {
+      // get the associated game ID
+      const gameId = componentId.replace("join_button_", "");
+
+      // get active game details
+      const activeGame = await getActiveGames(db, gameId);
+      const hostUserId = activeGame[0].host_user;
+      const maxPlayers = activeGame[0].max_players;
+      console.log("hostUserId:", hostUserId);
+      console.log("maxPlayers:", maxPlayers);
+
+      // get response token of parent message
+      const initialResponseToken = await getResponseToken(db, hostUserId);
+
+      // insert user to joined_users
+      await insertJoinedUser(db, gameId, userId);
+      console.log("Joined users inserted (join button)!");
+
+      // fetch joined users from this game session
+      const joinedUsers = await getJoinedUsers(db, gameId);
+      console.log("Joined users selected (join button)!");
+      const joinedUsersList = joinedUsers.map((user) => `<@${user.username}>`).join("\n");
+
+      // create update message content
+      const joinedUsersUpdateParentMessageContent = {
+        content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players! \n \nJoined Players:\n${joinedUsersList}`,
+      };
+
+      // send response to discord
+      await res.send({
+        type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+      });
+
+      // update original message
+      await updateMessage(initialResponseToken, joinedUsersUpdateParentMessageContent);
+
     }
   }
 });

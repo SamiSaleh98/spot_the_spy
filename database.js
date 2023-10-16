@@ -26,9 +26,10 @@ export async function createInitialTables(db) {
     `);
 }
 
-// get active game
-export async function getActiveGames(db) {
+// get active game (optional parameter gameID => either get all active games, or an active with a specified game ID)
+export async function getActiveGames(db, gameId = null) {
   return new Promise((resolve, reject) => {
+    if (!gameId) {
     db.all("SELECT * FROM active_games", [], (err, rows) => {
       if (err) {
         console.error("Error fetching active games:", err);
@@ -43,6 +44,22 @@ export async function getActiveGames(db) {
         resolve(games);
       }
     });
+  } else {
+    db.all("SELECT * FROM active_games WHERE game_id = ?", [gameId], (err, rows) => {
+      if (err) {
+        console.error("Error fetching active games:", err);
+        reject(err);
+      } else {
+        const games = rows.map((row) => ({
+          game_id: row.game_id,
+          host_user: row.host_user,
+          max_players: row.max_players,
+        }));
+        console.log("Select from getActiveGames successful!");
+        resolve(games);
+      }
+    });
+  }
   });
 }
 

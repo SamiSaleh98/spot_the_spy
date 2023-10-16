@@ -62,7 +62,12 @@ export async function insertActiveGame(db, gameId, hostUserId, maxPlayers) {
 }
 
 // insert message data to messages
-export async function insertMessageData(db, messageId, hostUserId, responseToken) {
+export async function insertMessageData(
+  db,
+  messageId,
+  hostUserId,
+  responseToken
+) {
   db.run(
     "INSERT INTO messages (message_id, host_user, response_token) VALUES (?, ?, ?)",
     [messageId, hostUserId, responseToken],
@@ -114,14 +119,48 @@ export async function deleteActiveGame(db, gameId, hostUserId) {
 
 // delete message with token from messages table
 export async function deleteMessageWithToken(db, hostUserId) {
-  db.run("DELETE FROM messages WHERE host_user = ?",
-  [hostUserId],
-  (err) => {
+  db.run("DELETE FROM messages WHERE host_user = ?", [hostUserId], (err) => {
     if (err) {
-      console.error("Error deleting message dataset!");
+      console.error("Error deleting message dataset!", err);
     } else {
       console.log("Delete from messages successfull!");
     }
-  }
+  });
+}
+
+// insert joined user to the joined_users table
+export async function insertJoinedUser(db, gameId, userId) {
+  db.run(
+    "INSERT INTO joined_users (game_id, username) VALUES (?, ?)",
+    [gameId, userId],
+    (err) => {
+      if (err) {
+        console.error("Error inserting joined user:", err);
+      } else {
+        console.log("Inserting joined user successfull habibi!!!");
+      }
+    }
   );
+}
+
+// get joined users from joined_users table
+export async function getJoinedUsers(db, gameId) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      "SELECT username FROM joined_users WHERE game_id = ?",
+      [gameId],
+      (err, rows) => {
+        if (err) {
+          console.error("Error fetched joined users:", err);
+          reject(err);
+        } else {
+          const users = rows.map((row) => ({
+            username: row.username,
+          }));
+          console.log("Select joined users successfull!");
+          resolve(users);
+        }
+      }
+    );
+  });
 }

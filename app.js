@@ -23,6 +23,8 @@ import {
   getResponseToken,
   deleteActiveGame,
   deleteMessageWithToken,
+  insertJoinedUser,
+  getJoinedUsers,
 } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
@@ -99,6 +101,7 @@ app.post("/interactions", async function (req, res) {
     }
     // "start" command
     else if (name === "start" && id) {
+      console.log("------------------------");
       console.log("Start command initiated");
 
       // fetch the number of players chosen by the user
@@ -137,11 +140,19 @@ app.post("/interactions", async function (req, res) {
       await insertActiveGame(db, gameId, hostUserId, maxPlayers);
       console.log("inserted active game data");
 
+      // insert hostuser automatically to joined_users
+      await insertJoinedUser(db, gameId, hostUserId);
+      console.log("Joined hostuser inserted!");
+
+      // fetch joined users from this game session
+      const joinedUsers = await getJoinedUsers(db, gameId);
+      const joinedUsersList = joinedUsers.map((user) => `<@${user.username}>`).join("\n");
+
       // send interaction response
       return res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-          content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!`,
+          content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players! \n \nJoined Players:\n${joinedUsersList}`,
           components: [
             {
               type: 1,
@@ -166,6 +177,9 @@ app.post("/interactions", async function (req, res) {
     }
     // cancel command
     else if (name === "cancel") {
+      console.log("------------------------");
+      console.log("Cancel command initiated");
+
       const hostUserId = member.user.id;
       // check if the user is already running a game or not
       const games = await getActiveGames(db);

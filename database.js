@@ -111,3 +111,17 @@ export async function deleteActiveGame(db, gameId, hostUserId) {
     }
   );
 }
+
+// delete message with token from messages table
+export async function deleteMessageWithToken(db, hostUserId) {
+  db.run("DELETE FROM messages WHERE host_user = ?",
+  [hostUserId],
+  (err) => {
+    if (err) {
+      console.error("Error deleting message dataset!");
+    } else {
+      console.log("Delete from messages successfull!");
+    }
+  }
+  );
+}

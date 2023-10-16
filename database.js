@@ -164,3 +164,17 @@ export async function getJoinedUsers(db, gameId) {
     );
   });
 }
+
+// delete joined users after canceling game
+export async function deleteJoinedUsers(db, gameId) {
+  db.run("DELETE FROM joined_users WHERE game_id = ?",
+  [gameId],
+  (err) => {
+    if (err) {
+      console.error("Error deleting joined users:", err);
+    } else {
+      console.log("Delete joined users successfull!");
+    }
+  }
+  );
+}

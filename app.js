@@ -25,6 +25,7 @@ import {
   deleteMessageWithToken,
   insertJoinedUser,
   getJoinedUsers,
+  deleteJoinedUsers,
 } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
@@ -146,6 +147,7 @@ app.post("/interactions", async function (req, res) {
 
       // fetch joined users from this game session
       const joinedUsers = await getJoinedUsers(db, gameId);
+      console.log("Joined users selected");
       const joinedUsersList = joinedUsers.map((user) => `<@${user.username}>`).join("\n");
 
       // send interaction response
@@ -213,6 +215,11 @@ app.post("/interactions", async function (req, res) {
       console.log("game ID:", gameId);
       // delete active game from database table active_games
       await deleteActiveGame(db, gameId, member.user.id);
+      console.log("Active game deleted!");
+
+      // delete joined users from this game
+      await deleteJoinedUsers(db, gameId);
+      console.log("Joined users deleted!");
 
       // send game cancelation confirmation
       res.send({

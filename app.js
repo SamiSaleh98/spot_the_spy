@@ -279,10 +279,24 @@ app.post("/interactions", async function (req, res) {
     // custom_id set in payload when sending message component
     const componentId = data.custom_id;
 
-    // if clicked button is "JOIN"
+    // if clicked button is "JOIN"----------------------------------------------------------------------------------------------
     if (componentId.startsWith("join_button_")) {
       // get the associated game ID
       const gameId = componentId.replace("join_button_", "");
+
+      // check if the user has already joined this game
+      const checkJoinedUsers = await getJoinedUsers(db, gameId);
+      const userAlreadyJoined = checkJoinedUsers.some((user) => user.username === userId);
+      if (userAlreadyJoined) {
+        // send an ephemeral message showing that you have already joined the game session
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: "You've already joined this game!",
+            flags: InteractionResponseFlags.EPHEMERAL,
+          },
+        });
+      }
 
       // get active game details
       const activeGame = await getActiveGames(db, gameId);
@@ -315,6 +329,10 @@ app.post("/interactions", async function (req, res) {
 
       // update original message
       await updateMessage(initialResponseToken, joinedUsersUpdateParentMessageContent);
+
+    }
+    // if clicked button is "Leave"
+    else if (componentId.startsWith("leave_button_")) {
 
     }
   }

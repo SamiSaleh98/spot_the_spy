@@ -100,7 +100,7 @@ app.post("/interactions", async function (req, res) {
         });
       }
     }
-    // "start" command
+    // "start" command ---------------------------------------------------------------------------------------------------------------
     else if (name === "start" && id) {
       console.log("------------------------");
       console.log("Start command initiated");
@@ -177,7 +177,7 @@ app.post("/interactions", async function (req, res) {
         },
       });
     }
-    // cancel command
+    // cancel command -----------------------------------------------------------------------------------------------------------------
     else if (name === "cancel") {
       console.log("------------------------");
       console.log("Cancel command initiated");
@@ -331,8 +331,53 @@ app.post("/interactions", async function (req, res) {
       await updateMessage(initialResponseToken, joinedUsersUpdateParentMessageContent);
 
     }
-    // if clicked button is "Leave"
+    // if clicked button is "Leave" -----------------------------------------------------------------------------------------------------------
     else if (componentId.startsWith("leave_button_")) {
+
+      // fetch game ID associated with this button
+      const gameId = componentId.replace("leave_button_", "");
+
+      // check if user is already in the game session
+      const checkJoinedUsers = await getJoinedUsers(db, gameId);
+      const userAlreadyJoined = checkJoinedUsers.some((user) => user.username === userId);
+      if (!userAlreadyJoined) {
+        // send an ephemeral message showing that you are in an active game to leave
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: "You haven't joined this game session yet!",
+            flags: InteractionResponseFlags.EPHEMERAL,
+          },
+        });
+      }
+
+      // get active game details
+      const activeGame = await getActiveGames(db, gameId);
+      const hostUserId = activeGame[0].host_user;
+      const maxPlayers = activeGame[0].max_players;
+
+      // get response token for parent message
+      const initialResponseToken = await getResponseToken(db, hostUserId);
+
+      // remove user from game session
+      await deleteJoinedUsers(db, gameId, userId);
+
+      // fetch joined users from this game session
+      const joinedUsers = await getJoinedUsers(db, gameId);
+      const joinedUsersList = joinedUsers.map((user) => `<@${user.username}>`).join("\n");
+
+      // create update message content
+      const joinedUsersUpdateParentMessageContent = {
+        content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players! \n \nJoined Players:\n${joinedUsersList}`,
+      };
+
+      // send response to discord
+      await res.send({
+        type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+      });
+
+      // update original message
+      await updateMessage(initialResponseToken, joinedUsersUpdateParentMessageContent);
 
     }
   }

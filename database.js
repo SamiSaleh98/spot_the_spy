@@ -183,7 +183,8 @@ export async function getJoinedUsers(db, gameId) {
 }
 
 // delete joined users after canceling game
-export async function deleteJoinedUsers(db, gameId) {
+export async function deleteJoinedUsers(db, gameId, userId = null) {
+  if (!userId) {
   db.run("DELETE FROM joined_users WHERE game_id = ?",
   [gameId],
   (err) => {
@@ -194,4 +195,16 @@ export async function deleteJoinedUsers(db, gameId) {
     }
   }
   );
+} else {
+  db.run("DELETE FROM joined_users WHERE game_id = ? AND username = ?",
+  [gameId, userId],
+  (err) => {
+    if (err) {
+      console.error("Error deleting joined user:", err);
+    } else {
+      console.log("Delete joined user successfull!");
+    }
+  }
+  );
+}
 }

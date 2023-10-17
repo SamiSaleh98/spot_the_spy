@@ -74,6 +74,7 @@ export function generateUniqueGameId() {
   return gameId;
 }
 
+// update parent message using "PATCH" method
 export async function updateMessage(responseToken, messageContent) {
   try {
     await DiscordRequest(
@@ -85,5 +86,21 @@ export async function updateMessage(responseToken, messageContent) {
     );
   } catch (err) {
     console.error("Error updating message:", err);
+  }
+}
+
+// send follow up response/message using "POST" method
+export async function sendFollowUpMessage(initialResponseToken, messageContent) {
+  try {
+    await DiscordRequest(
+      `webhooks/${process.env.APP_ID}/${initialResponseToken}`,
+      {
+        method: "POST",
+        body: messageContent.data,
+        wait: true,
+      }
+    );
+  } catch (err) {
+    console.error("Error sending follow-up message:", err);
   }
 }

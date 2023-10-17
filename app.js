@@ -13,6 +13,7 @@ import {
   DiscordRequest,
   generateUniqueGameId,
   updateMessage,
+  sendFollowUpMessage,
 } from "./utils.js";
 
 import {
@@ -151,7 +152,7 @@ app.post("/interactions", async function (req, res) {
       const joinedUsersList = joinedUsers.map((user) => `<@${user.username}>`).join("\n");
 
       // send interaction response
-      return res.send({
+      res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
           content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players! \n \nJoined Players:\n${joinedUsersList}`,
@@ -176,6 +177,31 @@ app.post("/interactions", async function (req, res) {
           ],
         },
       });
+
+      // create follow up message
+      const startGameFollowUp = {
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: "Start the game whenever you want by clicking the button bellow!",
+          flags: InteractionResponseFlags.EPHEMERAL,
+          components: [
+            {
+              type: 1,
+              components: [
+                {
+                  type: 2,
+                  custom_id: `start_game_button_${gameId}`,
+                  label: "Start game",
+                  style: 3,
+                },
+              ],
+            },
+          ],
+        },
+      };
+
+      // send follow up message
+      await sendFollowUpMessage(req.body.token, startGameFollowUp);
     }
     // cancel command -----------------------------------------------------------------------------------------------------------------
     else if (name === "cancel") {

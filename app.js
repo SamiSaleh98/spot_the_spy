@@ -284,9 +284,16 @@ app.post("/interactions", async function (req, res) {
       // get the associated game ID
       const gameId = componentId.replace("join_button_", "");
 
+      // fetch data from this game
+      const activeGamesData = await getActiveGames(db, gameId);
+
+      // fetch data from joined users
+      const joinedUsersData = await getJoinedUsers(db, gameId);
+
+
+
       // check if the user has already joined this game
-      const checkJoinedUsers = await getJoinedUsers(db, gameId);
-      const userAlreadyJoined = checkJoinedUsers.some((user) => user.username === userId);
+      const userAlreadyJoined = joinedUsersData.some((user) => user.username === userId);
       if (userAlreadyJoined) {
         // send an ephemeral message showing that you have already joined the game session
         return res.send({
@@ -298,10 +305,23 @@ app.post("/interactions", async function (req, res) {
         });
       }
 
+      // check if max players exceeded
+      const maxPlayers = activeGamesData[0].max_players;
+      const countUsers = joinedUsersData.length;
+      console.log("Counted Users:", countUsers);
+      if (countUsers >= maxPlayers) {
+        // send an ephemeral message showing that the max player amount has been reached
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: "This game is already full. You cannot join at this time!",
+            flags: InteractionResponseFlags.EPHEMERAL,
+          },
+        });
+      }      
+
       // get active game details
-      const activeGame = await getActiveGames(db, gameId);
-      const hostUserId = activeGame[0].host_user;
-      const maxPlayers = activeGame[0].max_players;
+      const hostUserId = activeGamesData[0].host_user;
       console.log("hostUserId:", hostUserId);
       console.log("maxPlayers:", maxPlayers);
 

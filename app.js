@@ -255,6 +255,7 @@ app.post("/interactions", async function (req, res) {
 
 
       // delete follow up message
+      //const messageId = gameIdObj.message_id;
       //await DeleteFollowUpMessage(responseTokenFromParentMessage, messageId);
 
       // update parent message

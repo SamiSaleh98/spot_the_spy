@@ -50,6 +50,7 @@ export async function getActiveGames(db, gameId = null) {
             game_id: row.game_id,
             host_user: row.host_user,
             max_players: row.max_players,
+            message_id: row.message_id,
           }));
           console.log("Select from getActiveGames successful!");
           resolve(games);
@@ -68,6 +69,7 @@ export async function getActiveGames(db, gameId = null) {
               game_id: row.game_id,
               host_user: row.host_user,
               max_players: row.max_players,
+              message_id: row.message_id,
             }));
             console.log("Select from getActiveGames successful!");
             resolve(games);

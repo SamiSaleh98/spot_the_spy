@@ -12,7 +12,9 @@ export async function createInitialTables(db) {
         CREATE TABLE IF NOT EXISTS joined_users (
             game_id TEXT,
             username TEXT,
-            FOREIGN KEY (game_id) REFERENCES active_games (game_id)
+            role_id INTEGER,
+            FOREIGN KEY (game_id) REFERENCES active_games (game_id),
+            FOREIGN KEY (role_id) REFERENCES roles (role_id)
         )
     `);
 
@@ -24,42 +26,53 @@ export async function createInitialTables(db) {
             FOREIGN KEY (host_user) REFERENCES active_games (host_user)
         )
     `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS roles (
+        role_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        role_name TEXT
+    )
+`);
 }
 
 // get active game (optional parameter gameID => either get all active games, or an active with a specified game ID)
 export async function getActiveGames(db, gameId = null) {
   return new Promise((resolve, reject) => {
     if (!gameId) {
-    db.all("SELECT * FROM active_games", [], (err, rows) => {
-      if (err) {
-        console.error("Error fetching active games:", err);
-        reject(err);
-      } else {
-        const games = rows.map((row) => ({
-          game_id: row.game_id,
-          host_user: row.host_user,
-          max_players: row.max_players,
-        }));
-        console.log("Select from getActiveGames successful!");
-        resolve(games);
-      }
-    });
-  } else {
-    db.all("SELECT * FROM active_games WHERE game_id = ?", [gameId], (err, rows) => {
-      if (err) {
-        console.error("Error fetching active games:", err);
-        reject(err);
-      } else {
-        const games = rows.map((row) => ({
-          game_id: row.game_id,
-          host_user: row.host_user,
-          max_players: row.max_players,
-        }));
-        console.log("Select from getActiveGames successful!");
-        resolve(games);
-      }
-    });
-  }
+      db.all("SELECT * FROM active_games", [], (err, rows) => {
+        if (err) {
+          console.error("Error fetching active games:", err);
+          reject(err);
+        } else {
+          const games = rows.map((row) => ({
+            game_id: row.game_id,
+            host_user: row.host_user,
+            max_players: row.max_players,
+          }));
+          console.log("Select from getActiveGames successful!");
+          resolve(games);
+        }
+      });
+    } else {
+      db.all(
+        "SELECT * FROM active_games WHERE game_id = ?",
+        [gameId],
+        (err, rows) => {
+          if (err) {
+            console.error("Error fetching active games:", err);
+            reject(err);
+          } else {
+            const games = rows.map((row) => ({
+              game_id: row.game_id,
+              host_user: row.host_user,
+              max_players: row.max_players,
+            }));
+            console.log("Select from getActiveGames successful!");
+            resolve(games);
+          }
+        }
+      );
+    }
   });
 }
 
@@ -185,28 +198,26 @@ export async function getJoinedUsers(db, gameId) {
 // delete joined users after canceling game
 export async function deleteJoinedUsers(db, gameId, userId = null) {
   if (!userId) {
-  db.run("DELETE FROM joined_users WHERE game_id = ?",
-  [gameId],
-  (err) => {
-    if (err) {
-      console.error("Error deleting joined users:", err);
-    } else {
-      console.log("Delete joined users successfull!");
-    }
+    db.run("DELETE FROM joined_users WHERE game_id = ?", [gameId], (err) => {
+      if (err) {
+        console.error("Error deleting joined users:", err);
+      } else {
+        console.log("Delete joined users successfull!");
+      }
+    });
+  } else {
+    db.run(
+      "DELETE FROM joined_users WHERE game_id = ? AND username = ?",
+      [gameId, userId],
+      (err) => {
+        if (err) {
+          console.error("Error deleting joined user:", err);
+        } else {
+          console.log("Delete joined user successfull!");
+        }
+      }
+    );
   }
-  );
-} else {
-  db.run("DELETE FROM joined_users WHERE game_id = ? AND username = ?",
-  [gameId, userId],
-  (err) => {
-    if (err) {
-      console.error("Error deleting joined user:", err);
-    } else {
-      console.log("Delete joined user successfull!");
-    }
-  }
-  );
-}
 }
 
 // get message ID

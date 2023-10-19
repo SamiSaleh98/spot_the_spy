@@ -451,29 +451,47 @@ app.post("/interactions", async function (req, res) {
       const userIsHost = activeGameData.some(
         (game) => game.host_user === userId
       );
+      // user is host
       if (userIsHost) {
-        // get response token
-        const initialResponseToken = await getResponseToken(db, hostUserId);
+        // fetch joined users data
+        const joinedUsersData = await getJoinedUsers(db, gameId);
 
-        // get message ID
-        const messageId = req.body.message.id;
+        // count joined users
+        const countUsers = joinedUsersData.length;
 
-        // create update message content
-        const updateMainMessage = {
-          content: `The game hosted by <@${hostUserId}> is currently running ...`,
-          components: [],
-        };
+        // check if users are less than 4
+        if (countUsers < 4) {
+          return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+              content: `Minimum amount of players to start the game is 4. Please make sure more players join your game!`,
+              flags: InteractionResponseFlags.EPHEMERAL,
+            },
+          });
+        } else {
+          // get response token
+          const initialResponseToken = await getResponseToken(db, hostUserId);
 
-        // update main message
-        await updateMessage(initialResponseToken, updateMainMessage);
+          // get message ID
+          const messageId = req.body.message.id;
 
-        // delete follow-up message
-        await DeleteFollowUpMessage(initialResponseToken, messageId);
+          // create update message content
+          const updateMainMessage = {
+            content: `The game hosted by <@${hostUserId}> is currently running ...`,
+            components: [],
+          };
 
-        // send response to discord
-        return res.send({
-          type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
-        });
+          // update main message
+          await updateMessage(initialResponseToken, updateMainMessage);
+
+          // delete follow-up message
+          await DeleteFollowUpMessage(initialResponseToken, messageId);
+
+          // send response to discord
+          return res.send({
+            type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+          });
+        }
       }
       // person who clicked is not the host
       else {

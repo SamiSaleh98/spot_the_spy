@@ -208,3 +208,24 @@ export async function deleteJoinedUsers(db, gameId, userId = null) {
   );
 }
 }
+
+// get message ID
+export async function GetMessageId(db, hostUserId) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      "SELECT message_id FROM messages WHERE host_user = ?",
+      [hostUserId],
+      (err, row) => {
+        if (err) {
+          console.error("Error retrieving message ID:", err);
+          reject(err);
+        } else if (row) {
+          resolve(row.message_id);
+        } else {
+          resolve(null);
+          console.log("No message ID found for this User");
+        }
+      }
+    );
+  });
+}

@@ -104,3 +104,17 @@ export async function sendFollowUpMessage(initialResponseToken, messageContent) 
     console.error("Error sending follow-up message:", err);
   }
 }
+
+// delete follow up message
+export async function DeleteFollowUpMessage(initialResponseToken, messageId) {
+  try {
+    await DiscordRequest(
+      `webhooks/${process.env.APP_ID}/${initialResponseToken}/messages/${messageId}`,
+    {
+      method: "DELETE",
+    }
+    );
+  } catch (err) {
+    console.error("Error deleting follow-up message:", err);
+  }
+}

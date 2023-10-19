@@ -14,6 +14,7 @@ import {
   generateUniqueGameId,
   updateMessage,
   sendFollowUpMessage,
+  DeleteFollowUpMessage,
 } from "./utils.js";
 
 import {
@@ -27,6 +28,7 @@ import {
   insertJoinedUser,
   getJoinedUsers,
   deleteJoinedUsers,
+  GetMessageId,
 } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
@@ -133,6 +135,7 @@ app.post("/interactions", async function (req, res) {
       const MessageId = req.body.id;
       await insertMessageData(db, MessageId, hostUserId, req.body.token);
       console.log("message data inserted!");
+      console.log("Token from parent message:", req.body.token);
 
       console.log("Host has NO active games!");
       // create game ID based on timestamp and a number
@@ -149,13 +152,15 @@ app.post("/interactions", async function (req, res) {
       // fetch joined users from this game session
       const joinedUsers = await getJoinedUsers(db, gameId);
       console.log("Joined users selected");
-      const joinedUsersList = joinedUsers.map((user) => `<@${user.username}>`).join("\n");
+      const joinedUsersList = joinedUsers
+        .map((user) => `<@${user.username}>`)
+        .join("\n");
 
       // send interaction response
       res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-          content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players! \n \nJoined Players:\n${joinedUsersList}`,
+          content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
           components: [
             {
               type: 1,
@@ -182,8 +187,7 @@ app.post("/interactions", async function (req, res) {
       const startGameFollowUp = {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-          content: "Start the game whenever you want by clicking the button bellow!",
-          flags: InteractionResponseFlags.EPHEMERAL,
+          content: `<@${hostUserId}> can start the game whenever they want by clicking the button bellow!`,
           components: [
             {
               type: 1,
@@ -298,10 +302,9 @@ app.post("/interactions", async function (req, res) {
 
   // message components
   if (type === InteractionType.MESSAGE_COMPONENT) {
-
     // fetch user ID who clicked the button
     const userId = member.user.id;
-    
+
     // custom_id set in payload when sending message component
     const componentId = data.custom_id;
 
@@ -316,10 +319,10 @@ app.post("/interactions", async function (req, res) {
       // fetch data from joined users
       const joinedUsersData = await getJoinedUsers(db, gameId);
 
-
-
       // check if the user has already joined this game
-      const userAlreadyJoined = joinedUsersData.some((user) => user.username === userId);
+      const userAlreadyJoined = joinedUsersData.some(
+        (user) => user.username === userId
+      );
       if (userAlreadyJoined) {
         // send an ephemeral message showing that you have already joined the game session
         return res.send({
@@ -344,7 +347,7 @@ app.post("/interactions", async function (req, res) {
             flags: InteractionResponseFlags.EPHEMERAL,
           },
         });
-      }      
+      }
 
       // get active game details
       const hostUserId = activeGamesData[0].host_user;
@@ -361,11 +364,13 @@ app.post("/interactions", async function (req, res) {
       // fetch joined users from this game session
       const joinedUsers = await getJoinedUsers(db, gameId);
       console.log("Joined users selected (join button)!");
-      const joinedUsersList = joinedUsers.map((user) => `<@${user.username}>`).join("\n");
+      const joinedUsersList = joinedUsers
+        .map((user) => `<@${user.username}>`)
+        .join("\n");
 
       // create update message content
       const joinedUsersUpdateParentMessageContent = {
-        content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players! \n \nJoined Players:\n${joinedUsersList}`,
+        content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
       };
 
       // send response to discord
@@ -374,18 +379,21 @@ app.post("/interactions", async function (req, res) {
       });
 
       // update original message
-      await updateMessage(initialResponseToken, joinedUsersUpdateParentMessageContent);
-
+      await updateMessage(
+        initialResponseToken,
+        joinedUsersUpdateParentMessageContent
+      );
     }
     // if clicked button is "Leave" -----------------------------------------------------------------------------------------------------------
     else if (componentId.startsWith("leave_button_")) {
-
       // fetch game ID associated with this button
       const gameId = componentId.replace("leave_button_", "");
 
       // check if user is already in the game session
       const checkJoinedUsers = await getJoinedUsers(db, gameId);
-      const userAlreadyJoined = checkJoinedUsers.some((user) => user.username === userId);
+      const userAlreadyJoined = checkJoinedUsers.some(
+        (user) => user.username === userId
+      );
       if (!userAlreadyJoined) {
         // send an ephemeral message showing that you are in an active game to leave
         return res.send({
@@ -410,11 +418,13 @@ app.post("/interactions", async function (req, res) {
 
       // fetch joined users from this game session
       const joinedUsers = await getJoinedUsers(db, gameId);
-      const joinedUsersList = joinedUsers.map((user) => `<@${user.username}>`).join("\n");
+      const joinedUsersList = joinedUsers
+        .map((user) => `<@${user.username}>`)
+        .join("\n");
 
       // create update message content
       const joinedUsersUpdateParentMessageContent = {
-        content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players! \n \nJoined Players:\n${joinedUsersList}`,
+        content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
       };
 
       // send response to discord
@@ -423,8 +433,59 @@ app.post("/interactions", async function (req, res) {
       });
 
       // update original message
-      await updateMessage(initialResponseToken, joinedUsersUpdateParentMessageContent);
+      await updateMessage(
+        initialResponseToken,
+        joinedUsersUpdateParentMessageContent
+      );
+    }
+    // if clicked button is start_game -----------------------------------------------------------------------------------------
+    else if (componentId.startsWith("start_game_button_")) {
+      // fetch game ID associated with this game
+      const gameId = componentId.replace("start_game_button_", "");
 
+      // get this active game's data
+      const activeGameData = await getActiveGames(db, gameId);
+      const hostUserId = activeGameData[0].host_user;
+
+      // check if the person who clicks the button is the host
+      const userIsHost = activeGameData.some(
+        (game) => game.host_user === userId
+      );
+      if (userIsHost) {
+        // get response token
+        const initialResponseToken = await getResponseToken(db, hostUserId);
+
+        // get message ID
+        const messageId = req.body.message.id;
+
+        // create update message content
+        const updateMainMessage = {
+          content: `The game hosted by <@${hostUserId}> is currently running ...`,
+          components: [],
+        };
+
+        // update main message
+        await updateMessage(initialResponseToken, updateMainMessage);
+
+        // delete follow-up message
+        await DeleteFollowUpMessage(initialResponseToken, messageId);
+
+        // send response to discord
+        return res.send({
+          type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+        });
+      }
+      // person who clicked is not the host
+      else {
+        // send a message showing they are not the host
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `You are not the host of this game. Please refer to <@${hostUserId}>`,
+            flags: InteractionResponseFlags.EPHEMERAL,
+          },
+        });
+      }
     }
   }
 });

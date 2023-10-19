@@ -132,17 +132,18 @@ app.post("/interactions", async function (req, res) {
       }
 
       // insert message data into messages table
-      const MessageId = req.body.id;
-      await insertMessageData(db, MessageId, hostUserId, req.body.token);
+      const messageId = req.body.id;
+      const responseToken = req.body.token;
+      await insertMessageData(db, messageId, hostUserId, responseToken);
       console.log("message data inserted!");
-      console.log("Token from parent message:", req.body.token);
+      console.log("Token from parent message:", responseToken);
 
       console.log("Host has NO active games!");
       // create game ID based on timestamp and a number
       const gameId = generateUniqueGameId();
 
       // insert game data into the active_games table
-      await insertActiveGame(db, gameId, hostUserId, maxPlayers);
+      await insertActiveGame(db, gameId, hostUserId, maxPlayers, messageId);
       console.log("inserted active game data");
 
       // insert hostuser automatically to joined_users
@@ -205,7 +206,7 @@ app.post("/interactions", async function (req, res) {
       };
 
       // send follow up message
-      await sendFollowUpMessage(req.body.token, startGameFollowUp);
+      await sendFollowUpMessage(responseToken, startGameFollowUp);
     }
     // cancel command -----------------------------------------------------------------------------------------------------------------
     else if (name === "cancel") {
@@ -251,13 +252,10 @@ app.post("/interactions", async function (req, res) {
       await deleteJoinedUsers(db, gameId);
       console.log("Joined users deleted!");
 
-      // send game cancelation confirmation
-      res.send({
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-        data: {
-          content: `The game created by <@${hostUserId}> has been canceled!`,
-        },
-      });
+
+
+      // delete follow up message
+      //await DeleteFollowUpMessage(responseTokenFromParentMessage, messageId);
 
       // update parent message
       const updateParentMessageContent = {
@@ -271,7 +269,18 @@ app.post("/interactions", async function (req, res) {
 
       // Delete the dataset with the message and token after updating the message (it's not needed anymore)
       await deleteMessageWithToken(db, hostUserId);
-    } else if (name === "database_test") {
+
+      // send game cancelation confirmation
+      return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: `The game created by <@${hostUserId}> has been canceled!`,
+        },
+      });
+    } 
+
+    // database_test command
+    else if (name === "database_test") {
       db.run(
         `CREATE TABLE IF NOT EXISTS active_games (
           game_id TEXT PRIMARY KEY,
@@ -464,7 +473,7 @@ app.post("/interactions", async function (req, res) {
           return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-              content: `Minimum amount of players to start the game is 4. Please make sure more players join your game!`,
+              content: `The minimum amount of players to start the game is 4. Please make sure more players join your game!`,
               flags: InteractionResponseFlags.EPHEMERAL,
             },
           });

@@ -4,7 +4,9 @@ export async function createInitialTables(db) {
         CREATE TABLE IF NOT EXISTS active_games (
           game_id TEXT PRIMARY KEY,
           host_user TEXT,
-          max_players INTEGER
+          max_players INTEGER,
+          message_id TEXT,
+          FOREIGN KEY (message_id) REFERENCES messages (message_id)
         )
     `);
 
@@ -20,7 +22,7 @@ export async function createInitialTables(db) {
 
   db.run(`
         CREATE TABLE IF NOT EXISTS messages (
-            message_id INTEGER PRIMARY KEY,
+            message_id TEXT PRIMARY KEY,
             host_user TEXT,
             response_token TEXT,
             FOREIGN KEY (host_user) REFERENCES active_games (host_user)
@@ -77,10 +79,10 @@ export async function getActiveGames(db, gameId = null) {
 }
 
 // insert active game to active_games
-export async function insertActiveGame(db, gameId, hostUserId, maxPlayers) {
+export async function insertActiveGame(db, gameId, hostUserId, maxPlayers, messageId) {
   db.run(
-    "INSERT INTO active_games (game_id, host_user, max_players) VALUES (?, ?, ?)",
-    [gameId, hostUserId, maxPlayers],
+    "INSERT INTO active_games (game_id, host_user, max_players, message_id) VALUES (?, ?, ?, ?)",
+    [gameId, hostUserId, maxPlayers, messageId],
     (err) => {
       if (err) {
         console.error("Error inserting game data:", err);

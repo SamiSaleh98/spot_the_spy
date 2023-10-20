@@ -36,7 +36,7 @@ const START_COMMAND = {
       name: 'players',
       description: 'Set the maximum amount of players',
       required: true,
-      min_value: 3,
+      min_value: 4,
       max_value: 10,
     },
   ],

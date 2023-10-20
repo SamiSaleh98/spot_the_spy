@@ -15,7 +15,7 @@ import {
   updateMessage,
   sendFollowUpMessage,
   DeleteFollowUpMessage,
-  shuffleArray
+  shuffleArray,
 } from "./utils.js";
 
 import {
@@ -201,6 +201,12 @@ app.post("/interactions", async function (req, res) {
                   label: "Start game",
                   style: 3,
                 },
+                {
+                  type: 2,
+                  custom_id: `cancel_game_button_${gameId}`,
+                  label: "Cancel game",
+                  style: 4,
+                },
               ],
             },
           ],
@@ -254,8 +260,6 @@ app.post("/interactions", async function (req, res) {
       await deleteJoinedUsers(db, gameId);
       console.log("Joined users deleted!");
 
-
-
       // delete follow up message
       //const messageId = gameIdObj.message_id;
       //await DeleteFollowUpMessage(responseTokenFromParentMessage, messageId);
@@ -280,7 +284,7 @@ app.post("/interactions", async function (req, res) {
           content: `The game created by <@${hostUserId}> has been canceled!`,
         },
       });
-    } 
+    }
 
     // database_test command
     else if (name === "database_test") {
@@ -512,7 +516,9 @@ app.post("/interactions", async function (req, res) {
           await DeleteFollowUpMessage(initialResponseToken, messageId);
 
           // get joined users' usernames
-          const joinedUsersUserIds = joinedUsersData.map((user) => user.username);
+          const joinedUsersUserIds = joinedUsersData.map(
+            (user) => user.username
+          );
 
           // shuffle joined users
           const shuffledJoinedUsers = shuffleArray(joinedUsersUserIds);
@@ -548,6 +554,75 @@ app.post("/interactions", async function (req, res) {
             content: `You are not the host of this game. Please refer to <@${hostUserId}>`,
             flags: InteractionResponseFlags.EPHEMERAL,
           },
+        });
+      }
+    }
+
+    // if clicked button is "cancel game" ----------------------------------------------------------------------------------------------------------------------------------
+    else if (componentId.startsWith("cancel_game_button_")) {
+      // fetch game ID associated with this game
+      const gameId = componentId.replace("cancel_game_button_", "");
+
+      // get this active game's data
+      const activeGameData = await getActiveGames(db, gameId);
+      const hostUserId = activeGameData[0].host_user;
+
+      // check if the person who clicks the button is the host
+      const userIsHost = activeGameData.some(
+        (game) => game.host_user === userId
+      );
+      if (!userIsHost) {
+        // send a message saying you are not the host to cancel
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `You are not the host of this game to cancel it! Please refer to <@${hostUserId}>`,
+            flags: InteractionResponseFlags.EPHEMERAL,
+          },
+        });
+      }
+      // user who clicked "cancel" is host
+      else {
+        // fetch response token from parent message ID from the Host User
+        const responseTokenFromParentMessage = await getResponseToken(
+          db,
+          hostUserId
+        );
+        if (!responseTokenFromParentMessage) {
+          console.error("No stored response token found from parent message");
+          return;
+        }
+
+        // delete active game from database table active_games
+        await deleteActiveGame(db, gameId, hostUserId);
+        console.log("Active game deleted!");
+
+        // delete joined users from this game
+        await deleteJoinedUsers(db, gameId);
+        console.log("Joined users deleted!");
+
+        // delete follow-up message
+        await DeleteFollowUpMessage(
+          responseTokenFromParentMessage,
+          req.body.message.id
+        );
+
+        // update parent message
+        const updateParentMessageContent = {
+          content: `<@${hostUserId}> canceled this game. Use the command /start to start a new one`,
+          components: [],
+        };
+        await updateMessage(
+          responseTokenFromParentMessage,
+          updateParentMessageContent
+        );
+
+        // Delete the dataset with the message and token after updating the message (it's not needed anymore)
+        await deleteMessageWithToken(db, hostUserId);
+
+        // send response to discord
+        return res.send({
+          type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
         });
       }
     }

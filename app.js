@@ -16,6 +16,7 @@ import {
   sendFollowUpMessage,
   DeleteFollowUpMessage,
   shuffleArray,
+  getRandomLocation,
 } from "./utils.js";
 
 import {
@@ -509,6 +510,9 @@ app.post("/interactions", async function (req, res) {
             const investigatorUserId = shuffledJoinedUsers[i];
             await assignRoleToUser(db, gameId, investigatorUserId, 1);
           }
+
+          const randomCountry = await getRandomLocation();
+          console.log("randomCountry:", randomCountry)
 
           // get response token
           const initialResponseToken = await getResponseToken(db, hostUserId);

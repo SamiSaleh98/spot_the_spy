@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import https from 'https';
 import fetch from 'node-fetch';
 import { verifyKey } from 'discord-interactions';
 
@@ -127,4 +128,36 @@ export function shuffleArray(array) {
     [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];    
   }
   return shuffledArray;
+}
+
+// get random location from pastebin
+export async function getRandomLocation() {
+  const apiUrl = 'https://pastebin.com/raw/n201piDA';
+  const count = 10;
+  try {
+    const response = await fetch(apiUrl, {
+      agent: new https.Agent({ rejectUnauthorized: false }),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch data from ${apiUrl}`);
+    }
+
+    const data = await response.json();
+    const europeCountries = data.europe;
+    const randomCountries = [];
+
+    while (randomCountries.length < count) {
+      const randomIndex = Math.floor(Math.random() * europeCountries.length);
+      const randomCountry = europeCountries[randomIndex];
+      if (!randomCountries.includes(randomCountry)) {
+        randomCountries.push(randomCountry);
+      }
+    }
+
+    const randomIndex = Math.floor(Math.random() * randomCountries.length);
+    return randomCountries[randomIndex];
+  } catch (err) {
+    console.error("Error retrieving random countries:", err);
+    return null;
+  }
 }

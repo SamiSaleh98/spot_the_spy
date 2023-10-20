@@ -81,7 +81,13 @@ export async function getActiveGames(db, gameId = null) {
 }
 
 // insert active game to active_games
-export async function insertActiveGame(db, gameId, hostUserId, maxPlayers, messageId) {
+export async function insertActiveGame(
+  db,
+  gameId,
+  hostUserId,
+  maxPlayers,
+  messageId
+) {
   db.run(
     "INSERT INTO active_games (game_id, host_user, max_players, message_id) VALUES (?, ?, ?, ?)",
     [gameId, hostUserId, maxPlayers, messageId],
@@ -243,4 +249,18 @@ export async function GetMessageId(db, hostUserId) {
       }
     );
   });
+}
+
+export async function assignRoleToUser(db, gameId, userId, roleId) {
+  db.run(
+    "UPDATE joined_users SET role_id = ? WHERE game_id = ? AND username = ?",
+    [roleId, gameId, userId],
+    (err) => {
+      if (err) {
+        console.error("Error updating joined users:", err);
+      } else {
+        console.log("Updating joined users with the role ID successfull!");
+      }
+    }
+  );
 }

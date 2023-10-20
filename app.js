@@ -15,6 +15,7 @@ import {
   updateMessage,
   sendFollowUpMessage,
   DeleteFollowUpMessage,
+  shuffleArray
 } from "./utils.js";
 
 import {
@@ -29,6 +30,7 @@ import {
   getJoinedUsers,
   deleteJoinedUsers,
   GetMessageId,
+  assignRoleToUser,
 } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
@@ -488,7 +490,19 @@ app.post("/interactions", async function (req, res) {
           // create update message content
           const updateMainMessage = {
             content: `The game hosted by <@${hostUserId}> is currently running ...`,
-            components: [],
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 2,
+                    custom_id: `show_my_role_${gameId}`,
+                    label: "Show my Role",
+                    style: 1,
+                  },
+                ],
+              },
+            ],
           };
 
           // update main message
@@ -496,6 +510,28 @@ app.post("/interactions", async function (req, res) {
 
           // delete follow-up message
           await DeleteFollowUpMessage(initialResponseToken, messageId);
+
+          // get joined users' usernames
+          const joinedUsersUserIds = joinedUsersData.map((user) => user.username);
+
+          // shuffle joined users
+          const shuffledJoinedUsers = shuffleArray(joinedUsersUserIds);
+          console.log("Shuffled Joined Users:", shuffledJoinedUsers);
+
+          // assign the spy role
+          const spyUserId = shuffledJoinedUsers[0];
+          await assignRoleToUser(db, gameId, spyUserId, 2);
+
+          // assign the mole role
+          const moleUserId = shuffledJoinedUsers[1];
+          await assignRoleToUser(db, gameId, moleUserId, 3);
+
+          // assign the investigator role to the rest of the users
+          for (let i = 2; i < joinedUsersUserIds.length; i++) {
+            const investigatorUserId = shuffledJoinedUsers[i];
+            await assignRoleToUser(db, gameId, investigatorUserId, 1);
+          }
+          // ..............................................................................................................................................
 
           // send response to discord
           return res.send({

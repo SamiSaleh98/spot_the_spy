@@ -31,6 +31,7 @@ import {
   deleteJoinedUsers,
   GetMessageId,
   assignRoleToUser,
+  getUserRole,
 } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
@@ -190,7 +191,7 @@ app.post("/interactions", async function (req, res) {
       const startGameFollowUp = {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-          content: `<@${hostUserId}> can start the game whenever they want by clicking the button bellow!`,
+          content: `<@${hostUserId}> can start or cancel the game whenever they want here!`,
           components: [
             {
               type: 1,
@@ -476,7 +477,7 @@ app.post("/interactions", async function (req, res) {
         const countUsers = joinedUsersData.length;
 
         // check if users are less than 4
-        if (countUsers < 4) {
+        if (countUsers < 1) {
           return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
@@ -485,35 +486,6 @@ app.post("/interactions", async function (req, res) {
             },
           });
         } else {
-          // get response token
-          const initialResponseToken = await getResponseToken(db, hostUserId);
-
-          // get message ID
-          const messageId = req.body.message.id;
-
-          // create update message content
-          const updateMainMessage = {
-            content: `The game hosted by <@${hostUserId}> is currently running ...`,
-            components: [
-              {
-                type: 1,
-                components: [
-                  {
-                    type: 2,
-                    custom_id: `show_my_role_${gameId}`,
-                    label: "Show my Role",
-                    style: 1,
-                  },
-                ],
-              },
-            ],
-          };
-
-          // update main message
-          await updateMessage(initialResponseToken, updateMainMessage);
-
-          // delete follow-up message
-          await DeleteFollowUpMessage(initialResponseToken, messageId);
 
           // get joined users' usernames
           const joinedUsersUserIds = joinedUsersData.map(
@@ -537,7 +509,36 @@ app.post("/interactions", async function (req, res) {
             const investigatorUserId = shuffledJoinedUsers[i];
             await assignRoleToUser(db, gameId, investigatorUserId, 1);
           }
-          // ..............................................................................................................................................
+
+          // get response token
+          const initialResponseToken = await getResponseToken(db, hostUserId);
+
+          // get message ID
+          const messageId = req.body.message.id;
+
+          // create update message content
+          const updateMainMessage = {
+            content: `The game hosted by <@${hostUserId}> is currently running ...`,
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 2,
+                    custom_id: `show_my_role_button_${gameId}`,
+                    label: "Show my Role",
+                    style: 1,
+                  },
+                ],
+              },
+            ],
+          };
+
+          // update main message
+          await updateMessage(initialResponseToken, updateMainMessage);
+
+          // delete follow-up message
+          await DeleteFollowUpMessage(initialResponseToken, messageId);
 
           // send response to discord
           return res.send({
@@ -625,6 +626,32 @@ app.post("/interactions", async function (req, res) {
           type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
         });
       }
+    }
+
+    // if clicked button is show_my_role ------------------------------------------------------------------------------------------------------------------------------
+    else if (componentId.startsWith("show_my_role_button_")) {
+
+      // fetch game ID associated with this game
+      const gameId = componentId.replace("show_my_role_button_", "");
+
+      // get role associated with the user who clicked the button
+      const userRole = await getUserRole(db, gameId, userId);
+
+      if (userRole) {
+
+        // send an ephemeral message with the role
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `Your role is **${userRole}**.`,
+            flags: InteractionResponseFlags.EPHEMERAL,
+          },
+        });
+      } else {
+        console.error("No role assigned!");
+      }
+      
+
     }
   }
 });

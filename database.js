@@ -264,3 +264,24 @@ export async function assignRoleToUser(db, gameId, userId, roleId) {
     }
   );
 }
+
+export async function getUserRole(db, gameId, userId) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      "SELECT role_name FROM roles INNER JOIN joined_users ON roles.role_id = joined_users.role_id WHERE joined_users.game_id = ? AND joined_users.username = ?",
+      [gameId, userId],
+      (err, row) => {
+        if (err) {
+          console.error("Error retrieving role name:", err);
+          reject(err);
+        } else if (row) {
+          console.log("fetching role_name successfull");
+          resolve(row.role_name);
+        } else {
+          resolve(null);
+          console.log("No role name found!");
+        }
+      }
+    );
+  });
+}

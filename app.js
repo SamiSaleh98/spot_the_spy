@@ -34,10 +34,14 @@ import {
   assignRoleToUser,
   getUserRole,
   insertLocations,
+  insertMoleLocations,
   getLocations,
   assignLocationToGame,
   getSelectedLocation,
   deleteLocations,
+  get3RandomLocations,
+  deleteMoleLocations,
+  getMoleLocations,
 } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
@@ -270,6 +274,9 @@ app.post("/interactions", async function (req, res) {
       // delete locations from this game
       await deleteLocations(db, gameId);
 
+      // delete mole locations from this game
+      await deleteMoleLocations(db, gameId);
+
       // delete follow up message
       //const messageId = gameIdObj.message_id;
       //await DeleteFollowUpMessage(responseTokenFromParentMessage, messageId);
@@ -454,7 +461,7 @@ app.post("/interactions", async function (req, res) {
       };
 
       // send response to discord
-      await res.send({
+      res.send({
         type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
       });
 
@@ -503,7 +510,6 @@ app.post("/interactions", async function (req, res) {
 
           // shuffle joined users
           const shuffledJoinedUsers = await shuffleArray(joinedUsersUserIds);
-          console.log("Shuffled Joined Users:", shuffledJoinedUsers);
 
           // assign the spy role
           const spyUserId = shuffledJoinedUsers[0];
@@ -521,12 +527,15 @@ app.post("/interactions", async function (req, res) {
 
           // fetch random locations from pastebin
           const randomLocations = await getRandomLocations();
-          console.log("Random locations:", randomLocations);
+          //console.log("Random locations:", randomLocations);
 
           // insert these locations to the database
           if (randomLocations) {
             await insertLocations(db, gameId, randomLocations);
-            await assignLocationToGame(db, gameId, randomLocations);
+            const moleLocationsList = await get3RandomLocations(db, gameId);
+            const moleLocations = moleLocationsList.map((location) => location.location_name);
+            await insertMoleLocations(db, gameId, moleLocations);
+            await assignLocationToGame(db, gameId, moleLocations);
             console.log("Location assigned!");
           }
           
@@ -632,6 +641,9 @@ app.post("/interactions", async function (req, res) {
         // delete locations from this game
         await deleteLocations(db, gameId);
 
+        // delete mole locations from this game
+        await deleteMoleLocations(db, gameId);
+
         // delete follow-up message
         await DeleteFollowUpMessage(
           responseTokenFromParentMessage,
@@ -734,26 +746,41 @@ app.post("/interactions", async function (req, res) {
       const userRole = await getUserRole(db, gameId, userId);
 
       // get all locations for spy and mole
-      const locations = await getLocations(db, gameId);
-      const locationsList = locations.map((location) => `${location.location_name}`).join("\n");
+      const spyLocations = await getLocations(db, gameId);
+      const spyLocationsList = spyLocations.map((spyLocation) => `${spyLocation.location_name}`).join("\n");
+      const moleLocations = await getMoleLocations(db, gameId);
+      const moleLocationsList = moleLocations.map((moleLocation) => `${moleLocation.location_name}`).join("\n");
 
       // get location assigned for this game
       const assignedLocation = await getSelectedLocation(db, gameId);
 
       if (userRole) {
 
-        // check if user is spy or mole
-        if (userRole === "Spy" || userRole === "Mole") {
+        // user is spy
+        if (userRole === "Spy") {
                   
         // send an ephemeral message with the role
         return res.send({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${locationsList}`,
+            content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${spyLocationsList}`,
             flags: InteractionResponseFlags.EPHEMERAL,
           },
         });
-      } else {
+      } 
+      // user is mole
+      else if (userRole === "Mole") {
+        // send an ephemeral message with the role
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${moleLocationsList}`,
+            flags: InteractionResponseFlags.EPHEMERAL,
+          },
+        });
+      }
+      // user is investigator
+      else {
         // send an ephemeral message with the role
         return res.send({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,

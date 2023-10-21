@@ -147,11 +147,7 @@ export async function getRandomLocations() {
     const randomCategory = categories[Math.floor(Math.random() * categories.length)];
     const categoryData = data[randomCategory];
 
-    console.log("Data type of categoryData:", Array.isArray(categoryData));
-    console.log("categoryData:", categoryData);
-
     const shuffledCategoryData = await shuffleArray(categoryData);
-    console.log("shuffledCategoryData:", shuffledCategoryData);
     const selectedValues = shuffledCategoryData.slice(0, 10);
 
     return selectedValues;

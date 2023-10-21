@@ -46,6 +46,14 @@ export async function createInitialTables(db) {
         FOREIGN KEY (game_id) REFERENCES active_games (game_id)
     )
 `);
+
+db.run(`
+CREATE TABLE IF NOT EXISTS active_games_locations_mole (
+    game_id TEXT,
+    location_name TEXT,
+    FOREIGN KEY (game_id) REFERENCES active_games (game_id)
+)
+`);
 }
 
 // get active game (optional parameter gameID => either get all active games, or an active with a specified game ID)
@@ -382,6 +390,92 @@ export async function deleteLocations(db, gameId) {
       console.error("Error deleting locations:", err);
     } else {
       console.log("Deleting locations successfull!");
+    }
+  }
+  );
+}
+
+// insert mole locations into database (active_games_locations_mole)
+/*export async function insertMoleLocations(db, gameId, locations) {
+  if (Symbol.iterator in Object(locations)) {
+  for (const location of locations) {
+    try {
+      await db.run(
+        "INSERT INTO active_games_locations_mole (game_id, location_name) VALUES (?, ?)",
+        [gameId, location]
+      );
+    } catch (err) {
+      console.error("Error inserting mole locations:", err);
+    }
+  }
+}
+}*/
+export async function insertMoleLocations(db, gameId, locations) {
+  locations.forEach(async (location) => {
+    try {
+      await db.run(
+        "INSERT INTO active_games_locations_mole (game_id, location_name) VALUES (?, ?)",
+        [gameId, location]
+      );
+    } catch (err) {
+      console.error("Error inserting mole locations:", err);
+    }
+  });
+}
+
+// get 3 random locations for the mole
+export async function get3RandomLocations(db, gameId) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      "SELECT location_name FROM active_games_locations WHERE game_id = ? ORDER BY RANDOM() LIMIT 3",
+      [gameId],
+      (err, rows) => {
+        if (err) {
+          console.error("Error fetching mole location names:", err);
+          reject(err);
+        } else {
+          const locations = rows.map((row) => ({
+            location_name: row.location_name,
+          }));
+          console.log("Fetching mole locations successfull!");
+          resolve(locations);
+        }
+      }
+    );
+  });
+}
+
+// get mole locations
+export async function getMoleLocations(db, gameId) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      "SELECT location_name FROM active_games_locations_mole WHERE game_id = ?",
+      [gameId],
+      (err, rows) => {
+        if (err) {
+          console.error("Error fetching mole location names:", err);
+          reject(err);
+        } else {
+          const locations = rows.map((row) => ({
+            location_name: row.location_name,
+          }));
+          console.log("Fetching mole locations successfull!");
+          resolve(locations);
+        }
+      }
+    );
+  });
+}
+
+// delete locations from the mole locations table
+export async function deleteMoleLocations(db, gameId) {
+  db.run("DELETE FROM active_games_locations_mole WHERE game_id = ?",
+  [gameId],
+  (err) => {
+    if (err) {
+      console.error("Error deleting mole locations:", err);
+    } else {
+      console.log("Deleting mole locations successfull!");
     }
   }
   );

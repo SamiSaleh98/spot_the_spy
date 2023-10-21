@@ -372,3 +372,17 @@ export async function getSelectedLocation(db, gameId) {
     );
   });
 }
+
+// delete locations from the locations table
+export async function deleteLocations(db, gameId) {
+  db.run("DELETE FROM active_games_locations WHERE game_id = ?",
+  [gameId],
+  (err) => {
+    if (err) {
+      console.error("Error deleting locations:", err);
+    } else {
+      console.log("Deleting locations successfull!");
+    }
+  }
+  );
+}

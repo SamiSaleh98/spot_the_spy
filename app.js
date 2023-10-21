@@ -37,6 +37,7 @@ import {
   getLocations,
   assignLocationToGame,
   getSelectedLocation,
+  deleteLocations,
 } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
@@ -265,6 +266,9 @@ app.post("/interactions", async function (req, res) {
       // delete joined users from this game
       await deleteJoinedUsers(db, gameId);
       console.log("Joined users deleted!");
+
+      // delete locations from this game
+      await deleteLocations(db, gameId);
 
       // delete follow up message
       //const messageId = gameIdObj.message_id;
@@ -546,6 +550,12 @@ app.post("/interactions", async function (req, res) {
                     label: "Show my Role",
                     style: 1,
                   },
+                  {
+                    type: 2,
+                    custom_id: `cancel_game_2_button_${gameId}`,
+                    label: "Cancel game",
+                    style: 4,
+                  }
                 ],
               },
             ],
@@ -619,6 +629,9 @@ app.post("/interactions", async function (req, res) {
         await deleteJoinedUsers(db, gameId);
         console.log("Joined users deleted!");
 
+        // delete locations from this game
+        await deleteLocations(db, gameId);
+
         // delete follow-up message
         await DeleteFollowUpMessage(
           responseTokenFromParentMessage,
@@ -644,6 +657,72 @@ app.post("/interactions", async function (req, res) {
         });
       }
     }
+
+        // if clicked button is "cancel game" ----------------------------------------------------------------------------------------------------------------------------------
+        else if (componentId.startsWith("cancel_game_2_button_")) {
+          // fetch game ID associated with this game
+          const gameId = componentId.replace("cancel_game_2_button_", "");
+    
+          // get this active game's data
+          const activeGameData = await getActiveGames(db, gameId);
+          const hostUserId = activeGameData[0].host_user;
+    
+          // check if the person who clicks the button is the host
+          const userIsHost = activeGameData.some(
+            (game) => game.host_user === userId
+          );
+          if (!userIsHost) {
+            // send a message saying you are not the host to cancel
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `You are not the host of this game to cancel it! Please refer to <@${hostUserId}>`,
+                flags: InteractionResponseFlags.EPHEMERAL,
+              },
+            });
+          }
+          // user who clicked "cancel" is host
+          else {
+            // fetch response token from parent message ID from the Host User
+            const responseTokenFromParentMessage = await getResponseToken(
+              db,
+              hostUserId
+            );
+            if (!responseTokenFromParentMessage) {
+              console.error("No stored response token found from parent message");
+              return;
+            }
+    
+            // delete active game from database table active_games
+            await deleteActiveGame(db, gameId, hostUserId);
+            console.log("Active game deleted!");
+    
+            // delete joined users from this game
+            await deleteJoinedUsers(db, gameId);
+            console.log("Joined users deleted!");
+    
+            // delete locations from this game
+            await deleteLocations(db, gameId);
+    
+            // update parent message
+            const updateParentMessageContent = {
+              content: `<@${hostUserId}> canceled this game. Use the command /start to start a new one`,
+              components: [],
+            };
+            await updateMessage(
+              responseTokenFromParentMessage,
+              updateParentMessageContent
+            );
+    
+            // Delete the dataset with the message and token after updating the message (it's not needed anymore)
+            await deleteMessageWithToken(db, hostUserId);
+    
+            // send response to discord
+            return res.send({
+              type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+            });
+          }
+        }
 
     // if clicked button is show_my_role ------------------------------------------------------------------------------------------------------------------------------
     else if (componentId.startsWith("show_my_role_button_")) {
@@ -685,7 +764,14 @@ app.post("/interactions", async function (req, res) {
         });
       }
       } else {
-        console.error("No role assigned!");
+        // send an ephemeral message saying there is no role assigned
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `You have no role assigned. You are probably not in this game session`,
+            flags: InteractionResponseFlags.EPHEMERAL,
+          },
+        });
       }
       
 

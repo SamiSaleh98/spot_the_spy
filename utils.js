@@ -121,7 +121,7 @@ export async function DeleteFollowUpMessage(initialResponseToken, messageId) {
 }
 
 // shuffle array
-export function shuffleArray(array) {
+export async function shuffleArray(array) {
   const shuffledArray = [...array];
   for (let i = shuffledArray.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -131,7 +131,7 @@ export function shuffleArray(array) {
 }
 
 // get random location from pastebin
-export async function getRandomLocation() {
+export async function getRandomLocations() {
   const apiUrl = 'https://pastebin.com/raw/n201piDA';
   const count = 10;
   try {
@@ -143,21 +143,20 @@ export async function getRandomLocation() {
     }
 
     const data = await response.json();
-    const europeCountries = data.europe;
-    const randomCountries = [];
+    const categories = Object.keys(data);
+    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+    const categoryData = data[randomCategory];
 
-    while (randomCountries.length < count) {
-      const randomIndex = Math.floor(Math.random() * europeCountries.length);
-      const randomCountry = europeCountries[randomIndex];
-      if (!randomCountries.includes(randomCountry)) {
-        randomCountries.push(randomCountry);
-      }
-    }
+    console.log("Data type of categoryData:", Array.isArray(categoryData));
+    console.log("categoryData:", categoryData);
 
-    const randomIndex = Math.floor(Math.random() * randomCountries.length);
-    return randomCountries[randomIndex];
+    const shuffledCategoryData = await shuffleArray(categoryData);
+    console.log("shuffledCategoryData:", shuffledCategoryData);
+    const selectedValues = shuffledCategoryData.slice(0, 10);
+
+    return selectedValues;
   } catch (err) {
-    console.error("Error retrieving random countries:", err);
+    console.error("Error retrieving random locations:", err);
     return null;
   }
 }

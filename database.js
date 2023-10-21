@@ -1,3 +1,5 @@
+import { shuffleArray } from "./utils.js";
+
 // Create active_games, joined_users, and messages if they don't exist
 export async function createInitialTables(db) {
   db.run(`
@@ -6,6 +8,7 @@ export async function createInitialTables(db) {
           host_user TEXT,
           max_players INTEGER,
           message_id TEXT,
+          selected_location TEXT,
           FOREIGN KEY (message_id) REFERENCES messages (message_id)
         )
     `);
@@ -33,6 +36,14 @@ export async function createInitialTables(db) {
     CREATE TABLE IF NOT EXISTS roles (
         role_id INTEGER PRIMARY KEY AUTOINCREMENT,
         role_name TEXT
+    )
+`);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS active_games_locations (
+        game_id TEXT,
+        location_name TEXT,
+        FOREIGN KEY (game_id) REFERENCES active_games (game_id)
     )
 `);
 }
@@ -280,6 +291,82 @@ export async function getUserRole(db, gameId, userId) {
         } else {
           resolve(null);
           console.log("No role name found!");
+        }
+      }
+    );
+  });
+}
+
+// insert locations into database (active_games_locations)
+export async function insertLocations(db, gameId, locations) {
+  locations.forEach(async (location) => {
+    try {
+      await db.run(
+        "INSERT INTO active_games_locations (game_id, location_name) VALUES (?, ?)",
+        [gameId, location]
+      );
+    } catch (err) {
+      console.error("Error inserting locations:", err);
+    }
+  });
+}
+
+// assign 1 location to the active game
+export async function assignLocationToGame(db, gameId, locations) {
+  const shuffledLocations = await shuffleArray(locations);
+  const selectedLocation = shuffledLocations[0];
+
+  db.run(
+    "UPDATE active_games SET selected_location = ? WHERE game_id = ?",
+    [selectedLocation, gameId],
+    (err) => {
+      if (err) {
+        console.error("Error assigning random location:", err);
+      } else {
+        console.log("Assigning random location successfull!");
+      }
+    }
+  );
+}
+
+// get locations
+export async function getLocations(db, gameId) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      "SELECT location_name FROM active_games_locations WHERE game_id = ?",
+      [gameId],
+      (err, rows) => {
+        if (err) {
+          console.error("Error fetching location names:", err);
+          reject(err);
+        } else {
+          const locations = rows.map((row) => ({
+            location_name: row.location_name,
+          }));
+          console.log("Fetching locations successfull!");
+          resolve(locations);
+        }
+      }
+    );
+  });
+}
+
+// get selected location
+export async function getSelectedLocation(db, gameId) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      "SELECT selected_location FROM active_games WHERE game_id = ?",
+      [gameId],
+      (err, row) => {
+        if (err) {
+          console.error("Error selecting selected location:", err);
+          reject(err);
+        } else if (row) {
+          console.log("Selecting selected role successfull");
+          resolve(row.selected_location);
+        } else {
+          console.log("No selected location assigned yet!");
+          resolve(null);
         }
       }
     );

@@ -16,7 +16,7 @@ import {
   sendFollowUpMessage,
   DeleteFollowUpMessage,
   shuffleArray,
-  getRandomLocation,
+  getRandomLocations,
 } from "./utils.js";
 
 import {
@@ -33,6 +33,10 @@ import {
   GetMessageId,
   assignRoleToUser,
   getUserRole,
+  insertLocations,
+  getLocations,
+  assignLocationToGame,
+  getSelectedLocation,
 } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
@@ -494,7 +498,7 @@ app.post("/interactions", async function (req, res) {
           );
 
           // shuffle joined users
-          const shuffledJoinedUsers = shuffleArray(joinedUsersUserIds);
+          const shuffledJoinedUsers = await shuffleArray(joinedUsersUserIds);
           console.log("Shuffled Joined Users:", shuffledJoinedUsers);
 
           // assign the spy role
@@ -511,8 +515,17 @@ app.post("/interactions", async function (req, res) {
             await assignRoleToUser(db, gameId, investigatorUserId, 1);
           }
 
-          const randomCountry = await getRandomLocation();
-          console.log("randomCountry:", randomCountry)
+          // fetch random locations from pastebin
+          const randomLocations = await getRandomLocations();
+          console.log("Random locations:", randomLocations);
+
+          // insert these locations to the database
+          if (randomLocations) {
+            await insertLocations(db, gameId, randomLocations);
+            await assignLocationToGame(db, gameId, randomLocations);
+            console.log("Location assigned!");
+          }
+          
 
           // get response token
           const initialResponseToken = await getResponseToken(db, hostUserId);
@@ -641,16 +654,36 @@ app.post("/interactions", async function (req, res) {
       // get role associated with the user who clicked the button
       const userRole = await getUserRole(db, gameId, userId);
 
+      // get all locations for spy and mole
+      const locations = await getLocations(db, gameId);
+      const locationsList = locations.map((location) => `${location.location_name}`).join("\n");
+
+      // get location assigned for this game
+      const assignedLocation = await getSelectedLocation(db, gameId);
+
       if (userRole) {
 
+        // check if user is spy or mole
+        if (userRole === "Spy" || userRole === "Mole") {
+                  
         // send an ephemeral message with the role
         return res.send({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: `Your role is **${userRole}**.`,
+            content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${locationsList}`,
             flags: InteractionResponseFlags.EPHEMERAL,
           },
         });
+      } else {
+        // send an ephemeral message with the role
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `Your role is **${userRole}**.\n \nHere is the secret location:\n**${assignedLocation}**`,
+            flags: InteractionResponseFlags.EPHEMERAL,
+          },
+        });
+      }
       } else {
         console.error("No role assigned!");
       }

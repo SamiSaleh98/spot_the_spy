@@ -47,7 +47,7 @@ export async function createInitialTables(db) {
     )
 `);
 
-db.run(`
+  db.run(`
 CREATE TABLE IF NOT EXISTS active_games_locations_mole (
     game_id TEXT,
     location_name TEXT,
@@ -383,15 +383,16 @@ export async function getSelectedLocation(db, gameId) {
 
 // delete locations from the locations table
 export async function deleteLocations(db, gameId) {
-  db.run("DELETE FROM active_games_locations WHERE game_id = ?",
-  [gameId],
-  (err) => {
-    if (err) {
-      console.error("Error deleting locations:", err);
-    } else {
-      console.log("Deleting locations successfull!");
+  db.run(
+    "DELETE FROM active_games_locations WHERE game_id = ?",
+    [gameId],
+    (err) => {
+      if (err) {
+        console.error("Error deleting locations:", err);
+      } else {
+        console.log("Deleting locations successfull!");
+      }
     }
-  }
   );
 }
 
@@ -469,14 +470,34 @@ export async function getMoleLocations(db, gameId) {
 
 // delete locations from the mole locations table
 export async function deleteMoleLocations(db, gameId) {
-  db.run("DELETE FROM active_games_locations_mole WHERE game_id = ?",
-  [gameId],
-  (err) => {
-    if (err) {
-      console.error("Error deleting mole locations:", err);
-    } else {
-      console.log("Deleting mole locations successfull!");
+  db.run(
+    "DELETE FROM active_games_locations_mole WHERE game_id = ?",
+    [gameId],
+    (err) => {
+      if (err) {
+        console.error("Error deleting mole locations:", err);
+      } else {
+        console.log("Deleting mole locations successfull!");
+      }
     }
-  }
   );
+}
+
+// get the username of the second spy
+export async function getSecondSpy(db, gameId, userId) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      "SELECT username FROM joined_users WHERE game_id = ? AND role_id = 2 and username <> ?",
+      [gameId, userId],
+      (err, row) => {
+        if (err) {
+          reject(err);
+        } else if (row) {
+          resolve(row.username);
+        } else {
+          resolve(null);
+        }
+      }
+    );
+  });
 }

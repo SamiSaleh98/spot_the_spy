@@ -42,6 +42,7 @@ import {
   get3RandomLocations,
   deleteMoleLocations,
   getMoleLocations,
+  getSecondSpy,
 } from "./database.js";
 
 import { getShuffledOptions, getResult } from "./game.js";
@@ -493,7 +494,7 @@ app.post("/interactions", async function (req, res) {
         const countUsers = joinedUsersData.length;
 
         // check if users are less than 4
-        if (countUsers < 1) {
+        if (countUsers < 4) {
           return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
@@ -501,8 +502,82 @@ app.post("/interactions", async function (req, res) {
               flags: InteractionResponseFlags.EPHEMERAL,
             },
           });
-        } else {
+        }
+        // 4 or 5 players --> 1 spy and no mole
+        else if (countUsers > 3 && countUsers < 6) {
+          // get joined users' usernames
+          const joinedUsersUserIds = joinedUsersData.map(
+            (user) => user.username
+          );
 
+          // shuffle joined users
+          const shuffledJoinedUsers = await shuffleArray(joinedUsersUserIds);
+
+          // assign the spy role
+          const spyUserId = shuffledJoinedUsers[0];
+          await assignRoleToUser(db, gameId, spyUserId, 2);
+
+          // assign the investigator role to the rest of the users
+          for (let i = 1; i < joinedUsersUserIds.length; i++) {
+            const investigatorUserId = shuffledJoinedUsers[i];
+            await assignRoleToUser(db, gameId, investigatorUserId, 1);
+          }
+
+          // fetch random locations from pastebin
+          const randomLocations = await getRandomLocations();
+          //console.log("Random locations:", randomLocations);
+
+          // insert these locations to the database
+          if (randomLocations) {
+            await insertLocations(db, gameId, randomLocations);
+            await assignLocationToGame(db, gameId, randomLocations);
+            console.log("Location assigned!");
+          }
+
+          // get response token
+          const initialResponseToken = await getResponseToken(db, hostUserId);
+
+          // get message ID
+          const messageId = req.body.message.id;
+
+          // create update message content
+          const updateMainMessage = {
+            content: `The game hosted by <@${hostUserId}> is currently running ...`,
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 2,
+                    custom_id: `show_my_role_button_${gameId}`,
+                    label: "Show my Role",
+                    style: 1,
+                  },
+                  {
+                    type: 2,
+                    custom_id: `cancel_game_2_button_${gameId}`,
+                    label: "Cancel game",
+                    style: 4,
+                  },
+                ],
+              },
+            ],
+          };
+
+          // update main message
+          await updateMessage(initialResponseToken, updateMainMessage);
+
+          // delete follow-up message
+          await DeleteFollowUpMessage(initialResponseToken, messageId);
+
+          // send response to discord
+          return res.send({
+            type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+          });
+        }
+
+        // 6 or 7 players --> 1 spy and 1 mole
+        else if (countUsers > 5 && countUsers < 8) {
           // get joined users' usernames
           const joinedUsersUserIds = joinedUsersData.map(
             (user) => user.username
@@ -533,12 +608,13 @@ app.post("/interactions", async function (req, res) {
           if (randomLocations) {
             await insertLocations(db, gameId, randomLocations);
             const moleLocationsList = await get3RandomLocations(db, gameId);
-            const moleLocations = moleLocationsList.map((location) => location.location_name);
+            const moleLocations = moleLocationsList.map(
+              (location) => location.location_name
+            );
             await insertMoleLocations(db, gameId, moleLocations);
             await assignLocationToGame(db, gameId, moleLocations);
             console.log("Location assigned!");
           }
-          
 
           // get response token
           const initialResponseToken = await getResponseToken(db, hostUserId);
@@ -564,7 +640,92 @@ app.post("/interactions", async function (req, res) {
                     custom_id: `cancel_game_2_button_${gameId}`,
                     label: "Cancel game",
                     style: 4,
-                  }
+                  },
+                ],
+              },
+            ],
+          };
+
+          // update main message
+          await updateMessage(initialResponseToken, updateMainMessage);
+
+          // delete follow-up message
+          await DeleteFollowUpMessage(initialResponseToken, messageId);
+
+          // send response to discord
+          return res.send({
+            type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+          });
+        }
+        // 8 or more players --> 2 spies and 1 mole
+        else if (countUsers > 7) {
+          // get joined users' usernames
+          const joinedUsersUserIds = joinedUsersData.map(
+            (user) => user.username
+          );
+
+          // shuffle joined users
+          const shuffledJoinedUsers = await shuffleArray(joinedUsersUserIds);
+
+          // assign the first spy role
+          const spy1UserId = shuffledJoinedUsers[0];
+          await assignRoleToUser(db, gameId, spy1UserId, 2);
+
+          // assign the seconde spy role
+          const spy2UserId = shuffledJoinedUsers[1];
+          await assignRoleToUser(db, gameId, spy2UserId, 2);
+
+          // assign the mole role
+          const moleUserId = shuffledJoinedUsers[2];
+          await assignRoleToUser(db, gameId, moleUserId, 3);
+
+          // assign the investigator role to the rest of the users
+          for (let i = 3; i < joinedUsersUserIds.length; i++) {
+            const investigatorUserId = shuffledJoinedUsers[i];
+            await assignRoleToUser(db, gameId, investigatorUserId, 1);
+          }
+
+          // fetch random locations from pastebin
+          const randomLocations = await getRandomLocations();
+          //console.log("Random locations:", randomLocations);
+
+          // insert these locations to the database
+          if (randomLocations) {
+            await insertLocations(db, gameId, randomLocations);
+            const moleLocationsList = await get3RandomLocations(db, gameId);
+            const moleLocations = moleLocationsList.map(
+              (location) => location.location_name
+            );
+            await insertMoleLocations(db, gameId, moleLocations);
+            await assignLocationToGame(db, gameId, moleLocations);
+            console.log("Location assigned!");
+          }
+
+          // get response token
+          const initialResponseToken = await getResponseToken(db, hostUserId);
+
+          // get message ID
+          const messageId = req.body.message.id;
+
+          // create update message content
+          const updateMainMessage = {
+            content: `The game hosted by <@${hostUserId}> is currently running ...`,
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 2,
+                    custom_id: `show_my_role_button_${gameId}`,
+                    label: "Show my Role",
+                    style: 1,
+                  },
+                  {
+                    type: 2,
+                    custom_id: `cancel_game_2_button_${gameId}`,
+                    label: "Cancel game",
+                    style: 4,
+                  },
                 ],
               },
             ],
@@ -670,138 +831,256 @@ app.post("/interactions", async function (req, res) {
       }
     }
 
-        // if clicked button is "cancel game" ----------------------------------------------------------------------------------------------------------------------------------
-        else if (componentId.startsWith("cancel_game_2_button_")) {
-          // fetch game ID associated with this game
-          const gameId = componentId.replace("cancel_game_2_button_", "");
-    
-          // get this active game's data
-          const activeGameData = await getActiveGames(db, gameId);
-          const hostUserId = activeGameData[0].host_user;
-    
-          // check if the person who clicks the button is the host
-          const userIsHost = activeGameData.some(
-            (game) => game.host_user === userId
-          );
-          if (!userIsHost) {
-            // send a message saying you are not the host to cancel
-            return res.send({
-              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-              data: {
-                content: `You are not the host of this game to cancel it! Please refer to <@${hostUserId}>`,
-                flags: InteractionResponseFlags.EPHEMERAL,
-              },
-            });
-          }
-          // user who clicked "cancel" is host
-          else {
-            // fetch response token from parent message ID from the Host User
-            const responseTokenFromParentMessage = await getResponseToken(
-              db,
-              hostUserId
-            );
-            if (!responseTokenFromParentMessage) {
-              console.error("No stored response token found from parent message");
-              return;
-            }
-    
-            // delete active game from database table active_games
-            await deleteActiveGame(db, gameId, hostUserId);
-            console.log("Active game deleted!");
-    
-            // delete joined users from this game
-            await deleteJoinedUsers(db, gameId);
-            console.log("Joined users deleted!");
-    
-            // delete locations from this game
-            await deleteLocations(db, gameId);
-    
-            // update parent message
-            const updateParentMessageContent = {
-              content: `<@${hostUserId}> canceled this game. Use the command /start to start a new one`,
-              components: [],
-            };
-            await updateMessage(
-              responseTokenFromParentMessage,
-              updateParentMessageContent
-            );
-    
-            // Delete the dataset with the message and token after updating the message (it's not needed anymore)
-            await deleteMessageWithToken(db, hostUserId);
-    
-            // send response to discord
-            return res.send({
-              type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
-            });
-          }
+    // if clicked button is "cancel game 2" ----------------------------------------------------------------------------------------------------------------------------------
+    else if (componentId.startsWith("cancel_game_2_button_")) {
+      // fetch game ID associated with this game
+      const gameId = componentId.replace("cancel_game_2_button_", "");
+
+      // get this active game's data
+      const activeGameData = await getActiveGames(db, gameId);
+      const hostUserId = activeGameData[0].host_user;
+
+      // check if the person who clicks the button is the host
+      const userIsHost = activeGameData.some(
+        (game) => game.host_user === userId
+      );
+      if (!userIsHost) {
+        // send a message saying you are not the host to cancel
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: `You are not the host of this game to cancel it! Please refer to <@${hostUserId}>`,
+            flags: InteractionResponseFlags.EPHEMERAL,
+          },
+        });
+      }
+      // user who clicked "cancel" is host
+      else {
+        // fetch response token from parent message ID from the Host User
+        const responseTokenFromParentMessage = await getResponseToken(
+          db,
+          hostUserId
+        );
+        if (!responseTokenFromParentMessage) {
+          console.error("No stored response token found from parent message");
+          return;
         }
+
+        // delete active game from database table active_games
+        await deleteActiveGame(db, gameId, hostUserId);
+        console.log("Active game deleted!");
+
+        // delete joined users from this game
+        await deleteJoinedUsers(db, gameId);
+        console.log("Joined users deleted!");
+
+        // delete locations from this game
+        await deleteLocations(db, gameId);
+
+        // update parent message
+        const updateParentMessageContent = {
+          content: `<@${hostUserId}> canceled this game. Use the command /start to start a new one`,
+          components: [],
+        };
+        await updateMessage(
+          responseTokenFromParentMessage,
+          updateParentMessageContent
+        );
+
+        // Delete the dataset with the message and token after updating the message (it's not needed anymore)
+        await deleteMessageWithToken(db, hostUserId);
+
+        // send response to discord
+        return res.send({
+          type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+        });
+      }
+    }
 
     // if clicked button is show_my_role ------------------------------------------------------------------------------------------------------------------------------
     else if (componentId.startsWith("show_my_role_button_")) {
-
       // fetch game ID associated with this game
       const gameId = componentId.replace("show_my_role_button_", "");
+
+      // fetch joined users data
+      const joinedUsersData = await getJoinedUsers(db, gameId);
+
+      // count joined users
+      const countUsers = joinedUsersData.length;
 
       // get role associated with the user who clicked the button
       const userRole = await getUserRole(db, gameId, userId);
 
-      // get all locations for spy and mole
-      const spyLocations = await getLocations(db, gameId);
-      const spyLocationsList = spyLocations.map((spyLocation) => `${spyLocation.location_name}`).join("\n");
-      const moleLocations = await getMoleLocations(db, gameId);
-      const moleLocationsList = moleLocations.map((moleLocation) => `${moleLocation.location_name}`).join("\n");
+      // 4 or 5 players --> no mole
+      if (countUsers < 6) {
+        // get all locations for spy and mole
+        const spyLocations = await getLocations(db, gameId);
+        const spyLocationsList = spyLocations
+          .map((spyLocation) => `${spyLocation.location_name}`)
+          .join("\n");
 
-      // get location assigned for this game
-      const assignedLocation = await getSelectedLocation(db, gameId);
+        // get location assigned for this game
+        const assignedLocation = await getSelectedLocation(db, gameId);
 
-      if (userRole) {
+        if (userRole) {
+          // user is spy
+          if (userRole === "Spy") {
+            // send an ephemeral message with the role
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${spyLocationsList}`,
+                flags: InteractionResponseFlags.EPHEMERAL,
+              },
+            });
+          }
 
-        // user is spy
-        if (userRole === "Spy") {
-                  
-        // send an ephemeral message with the role
-        return res.send({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${spyLocationsList}`,
-            flags: InteractionResponseFlags.EPHEMERAL,
-          },
-        });
-      } 
-      // user is mole
-      else if (userRole === "Mole") {
-        // send an ephemeral message with the role
-        return res.send({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${moleLocationsList}`,
-            flags: InteractionResponseFlags.EPHEMERAL,
-          },
-        });
+          // user is investigator
+          else {
+            // send an ephemeral message with the role
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `Your role is **${userRole}**.\n \nHere is the secret location:\n**${assignedLocation}**`,
+                flags: InteractionResponseFlags.EPHEMERAL,
+              },
+            });
+          }
+        } else {
+          // send an ephemeral message saying there is no role assigned
+          return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+              content: `You have no role assigned. You are probably not in this game session`,
+              flags: InteractionResponseFlags.EPHEMERAL,
+            },
+          });
+        }
+
+        // 6 of 7 players --> 1 spy and 1 mole
+      } else if (countUsers > 5 && countUsers < 8) {
+        // get all locations for spy and mole
+        const spyLocations = await getLocations(db, gameId);
+        const spyLocationsList = spyLocations
+          .map((spyLocation) => `${spyLocation.location_name}`)
+          .join("\n");
+        const moleLocations = await getMoleLocations(db, gameId);
+        const moleLocationsList = moleLocations
+          .map((moleLocation) => `${moleLocation.location_name}`)
+          .join("\n");
+
+        // get location assigned for this game
+        const assignedLocation = await getSelectedLocation(db, gameId);
+
+        if (userRole) {
+          // user is spy
+          if (userRole === "Spy") {
+            // send an ephemeral message with the role
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${spyLocationsList}`,
+                flags: InteractionResponseFlags.EPHEMERAL,
+              },
+            });
+          }
+          // user is mole
+          else if (userRole === "Mole") {
+            // send an ephemeral message with the role
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${moleLocationsList}`,
+                flags: InteractionResponseFlags.EPHEMERAL,
+              },
+            });
+          }
+          // user is investigator
+          else {
+            // send an ephemeral message with the role
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `Your role is **${userRole}**.\n \nHere is the secret location:\n**${assignedLocation}**`,
+                flags: InteractionResponseFlags.EPHEMERAL,
+              },
+            });
+          }
+        } else {
+          // send an ephemeral message saying there is no role assigned
+          return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+              content: `You have no role assigned. You are probably not in this game session`,
+              flags: InteractionResponseFlags.EPHEMERAL,
+            },
+          });
+        }
+
+        // 8 or more players --> 2 spies and 1 mole
+      } else if (countUsers > 7) {
+        // get all locations for spy and mole
+        const spyLocations = await getLocations(db, gameId);
+        const spyLocationsList = spyLocations
+          .map((spyLocation) => `${spyLocation.location_name}`)
+          .join("\n");
+        const moleLocations = await getMoleLocations(db, gameId);
+        const moleLocationsList = moleLocations
+          .map((moleLocation) => `${moleLocation.location_name}`)
+          .join("\n");
+
+        // get location assigned for this game
+        const assignedLocation = await getSelectedLocation(db, gameId);
+
+        if (userRole) {
+          // user is spy
+          if (userRole === "Spy") {
+
+            // fetch second spy username
+            const secondSpy = await getSecondSpy(db, gameId, userId);
+            
+            // send an ephemeral message with the role
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `Your role is **${userRole}**.\n \nThe second spy is **<@${secondSpy}>**\n \nHere are the possible locations:\n${spyLocationsList}`,
+                flags: InteractionResponseFlags.EPHEMERAL,
+              },
+            });
+          }
+          // user is mole
+          else if (userRole === "Mole") {
+            // send an ephemeral message with the role
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${moleLocationsList}`,
+                flags: InteractionResponseFlags.EPHEMERAL,
+              },
+            });
+          }
+          // user is investigator
+          else {
+            // send an ephemeral message with the role
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: `Your role is **${userRole}**.\n \nHere is the secret location:\n**${assignedLocation}**`,
+                flags: InteractionResponseFlags.EPHEMERAL,
+              },
+            });
+          }
+        } else {
+          // send an ephemeral message saying there is no role assigned
+          return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+              content: `You have no role assigned. You are probably not in this game session`,
+              flags: InteractionResponseFlags.EPHEMERAL,
+            },
+          });
+        }
       }
-      // user is investigator
-      else {
-        // send an ephemeral message with the role
-        return res.send({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: `Your role is **${userRole}**.\n \nHere is the secret location:\n**${assignedLocation}**`,
-            flags: InteractionResponseFlags.EPHEMERAL,
-          },
-        });
-      }
-      } else {
-        // send an ephemeral message saying there is no role assigned
-        return res.send({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: `You have no role assigned. You are probably not in this game session`,
-            flags: InteractionResponseFlags.EPHEMERAL,
-          },
-        });
-      }
-      
-
     }
   }
 });

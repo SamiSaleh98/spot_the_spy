@@ -407,16 +407,16 @@ app.post("/interactions", async function (req, res) {
         content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
       };
 
-      // send response to discord
-      await res.send({
-        type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
-      });
-
       // update original message
       await updateMessage(
         initialResponseToken,
         joinedUsersUpdateParentMessageContent
       );
+
+      // send response to discord
+      return res.send({
+        type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+      });
     }
     // if clicked button is "Leave" -----------------------------------------------------------------------------------------------------------
     else if (componentId.startsWith("leave_button_")) {
@@ -461,16 +461,16 @@ app.post("/interactions", async function (req, res) {
         content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
       };
 
-      // send response to discord
-      res.send({
-        type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
-      });
-
       // update original message
       await updateMessage(
         initialResponseToken,
         joinedUsersUpdateParentMessageContent
       );
+
+      // send response to discord
+      return res.send({
+        type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+      });
     }
     // if clicked button is start_game -----------------------------------------------------------------------------------------
     else if (componentId.startsWith("start_game_button_")) {
@@ -882,6 +882,9 @@ app.post("/interactions", async function (req, res) {
           content: `<@${hostUserId}> canceled this game. Use the command /start to start a new one`,
           components: [],
         };
+        // test
+        //const token = req.body.token;
+        //test
         await updateMessage(
           responseTokenFromParentMessage,
           updateParentMessageContent
@@ -929,8 +932,25 @@ app.post("/interactions", async function (req, res) {
             return res.send({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
               data: {
-                content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${spyLocationsList}`,
+                content: ``,
                 flags: InteractionResponseFlags.EPHEMERAL,
+                embeds: [
+                  {
+                    type: "rich",
+                    title: `Your role is:`,
+                    description: `**${userRole}**.\n\nThe list of locations for this game:\n\n${spyLocationsList}\n\nYour objective is to guess the location while you make sure to get rid of the investigators without being too suspicious. You can win by either guessing the location correctly or survive until there is one investigator left in the game.`,
+                    color: 0xff00bb,
+                    image: {
+                      url: "https://i.imgur.com/TOujaoQ.png",
+                      height: 500,
+                      width: 500,
+                    },
+                    author: {
+                      name: `Spot The Spy`,
+                      icon_url: "https://i.imgur.com/HX5mdZw.png",
+                    },
+                  },
+                ],
               },
             });
           }
@@ -941,8 +961,25 @@ app.post("/interactions", async function (req, res) {
             return res.send({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
               data: {
-                content: `Your role is **${userRole}**.\n \nHere is the secret location:\n**${assignedLocation}**`,
+                content: ``,
                 flags: InteractionResponseFlags.EPHEMERAL,
+                embeds: [
+                  {
+                    type: "rich",
+                    title: `Your role is:`,
+                    description: `**${userRole}**.\n\nThe secret location is:\n\n**${assignedLocation}**\n\nYour objective is to keep the location as shown above a secret for as long as possible. You can win the game by voting out the spy!`,
+                    color: 0xff00bb,
+                    image: {
+                      url: "https://i.imgur.com/sY6HYAk.png",
+                      height: 500,
+                      width: 500,
+                    },
+                    author: {
+                      name: `Spot The Spy`,
+                      icon_url: "https://i.imgur.com/HX5mdZw.png",
+                    },
+                  },
+                ],
               },
             });
           }
@@ -979,8 +1016,25 @@ app.post("/interactions", async function (req, res) {
             return res.send({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
               data: {
-                content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${spyLocationsList}`,
+                content: ``,
                 flags: InteractionResponseFlags.EPHEMERAL,
+                embeds: [
+                  {
+                    type: "rich",
+                    title: `Your role is:`,
+                    description: `**${userRole}**.\n\nThe list of locations for this game:\n\n${spyLocationsList}\n\nYour objective is to guess the location while you make sure to get rid of the investigators without being too suspicious. You can win by either guessing the location correctly or survive until there is one investigator left in the game.`,
+                    color: 0xff00bb,
+                    image: {
+                      url: "https://i.imgur.com/TOujaoQ.png",
+                      height: 500,
+                      width: 500,
+                    },
+                    author: {
+                      name: `Spot The Spy`,
+                      icon_url: "https://i.imgur.com/HX5mdZw.png",
+                    },
+                  },
+                ],
               },
             });
           }
@@ -990,10 +1044,27 @@ app.post("/interactions", async function (req, res) {
             return res.send({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
               data: {
-                content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${moleLocationsList}`,
+                content: ``,
                 flags: InteractionResponseFlags.EPHEMERAL,
+                embeds: [
+                  {
+                    type: "rich",
+                    title: `Your role is:`,
+                    description: `**${userRole}**.\n\nThe list of locations for this game:\n\n${moleLocationsList}\n\nYour objective is to help the spy or spies. Don’t be too obvious though!`,
+                    color: 0xff00bb,
+                    image: {
+                      url: "https://i.imgur.com/1E2guzC.png",
+                      height: 500,
+                      width: 500,
+                    },
+                    author: {
+                      name: `Spot The Spy`,
+                      icon_url: "https://i.imgur.com/HX5mdZw.png",
+                    },
+                  },
+                ],
               },
-            });
+            }); 
           }
           // user is investigator
           else {
@@ -1001,8 +1072,25 @@ app.post("/interactions", async function (req, res) {
             return res.send({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
               data: {
-                content: `Your role is **${userRole}**.\n \nHere is the secret location:\n**${assignedLocation}**`,
+                content: ``,
                 flags: InteractionResponseFlags.EPHEMERAL,
+                embeds: [
+                  {
+                    type: "rich",
+                    title: `Your role is:`,
+                    description: `**${userRole}**.\n\nThe secret location is:\n\n**${assignedLocation}**\n\nYour objective is to keep the location as shown above a secret for as long as possible. You can win the game by voting out the spy!`,
+                    color: 0xff00bb,
+                    image: {
+                      url: "https://i.imgur.com/sY6HYAk.png",
+                      height: 500,
+                      width: 500,
+                    },
+                    author: {
+                      name: `Spot The Spy`,
+                      icon_url: "https://i.imgur.com/HX5mdZw.png",
+                    },
+                  },
+                ],
               },
             });
           }
@@ -1035,16 +1123,32 @@ app.post("/interactions", async function (req, res) {
         if (userRole) {
           // user is spy
           if (userRole === "Spy") {
-
             // fetch second spy username
             const secondSpy = await getSecondSpy(db, gameId, userId);
-            
+
             // send an ephemeral message with the role
             return res.send({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
               data: {
-                content: `Your role is **${userRole}**.\n \nThe second spy is **<@${secondSpy}>**\n \nHere are the possible locations:\n${spyLocationsList}`,
+                content: ``,
                 flags: InteractionResponseFlags.EPHEMERAL,
+                embeds: [
+                  {
+                    type: "rich",
+                    title: `Your role is:`,
+                    description: `**${userRole}**.\n\nThe second spy is **<@${secondSpy}>**\n\nThe list of locations for this game:\n\n${spyLocationsList}\n\nYour objective is to guess the location while you make sure to get rid of the investigators without being too suspicious. You can win by either guessing the location correctly or survive until there is one investigator left in the game.`,
+                    color: 0xff00bb,
+                    image: {
+                      url: "https://i.imgur.com/TOujaoQ.png",
+                      height: 500,
+                      width: 500,
+                    },
+                    author: {
+                      name: `Spot The Spy`,
+                      icon_url: "https://i.imgur.com/HX5mdZw.png",
+                    },
+                  },
+                ],
               },
             });
           }
@@ -1054,8 +1158,25 @@ app.post("/interactions", async function (req, res) {
             return res.send({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
               data: {
-                content: `Your role is **${userRole}**.\n \nHere are the possible locations:\n${moleLocationsList}`,
+                content: ``,
                 flags: InteractionResponseFlags.EPHEMERAL,
+                embeds: [
+                  {
+                    type: "rich",
+                    title: `Your role is:`,
+                    description: `**${userRole}**.\n\nThe list of locations for this game:\n\n${moleLocationsList}\n\nYour objective is to help the spy or spies. Don’t be too obvious though!`,
+                    color: 0xff00bb,
+                    image: {
+                      url: "https://i.imgur.com/1E2guzC.png",
+                      height: 500,
+                      width: 500,
+                    },
+                    author: {
+                      name: `Spot The Spy`,
+                      icon_url: "https://i.imgur.com/HX5mdZw.png",
+                    },
+                  },
+                ],
               },
             });
           }
@@ -1065,8 +1186,25 @@ app.post("/interactions", async function (req, res) {
             return res.send({
               type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
               data: {
-                content: `Your role is **${userRole}**.\n \nHere is the secret location:\n**${assignedLocation}**`,
+                content: ``,
                 flags: InteractionResponseFlags.EPHEMERAL,
+                embeds: [
+                  {
+                    type: "rich",
+                    title: `Your role is:`,
+                    description: `**${userRole}**.\n\nThe secret location is:\n\n**${assignedLocation}**\n\nYour objective is to keep the location as shown above a secret for as long as possible. You can win the game by voting out the spy!`,
+                    color: 0xff00bb,
+                    image: {
+                      url: "https://i.imgur.com/sY6HYAk.png",
+                      height: 500,
+                      width: 500,
+                    },
+                    author: {
+                      name: `Spot The Spy`,
+                      icon_url: "https://i.imgur.com/HX5mdZw.png",
+                    },
+                  },
+                ],
               },
             });
           }

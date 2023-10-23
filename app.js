@@ -13,10 +13,13 @@ import {
   DiscordRequest,
   generateUniqueGameId,
   updateMessage,
+  updateMessageNew,
   sendFollowUpMessage,
   DeleteFollowUpMessage,
+  DeleteFollowUpMessageNew,
   shuffleArray,
   getRandomLocations,
+  getMessageData,
 } from "./utils.js";
 
 import {
@@ -145,19 +148,12 @@ app.post("/interactions", async function (req, res) {
         });
       }
 
-      // insert message data into messages table
-      const messageId = req.body.id;
-      const responseToken = req.body.token;
-      await insertMessageData(db, messageId, hostUserId, responseToken);
-      console.log("message data inserted!");
-      console.log("Token from parent message:", responseToken);
-
       console.log("Host has NO active games!");
       // create game ID based on timestamp and a number
       const gameId = generateUniqueGameId();
 
       // insert game data into the active_games table
-      await insertActiveGame(db, gameId, hostUserId, maxPlayers, messageId);
+      await insertActiveGame(db, gameId, hostUserId, maxPlayers);
       console.log("inserted active game data");
 
       // insert hostuser automatically to joined_users
@@ -210,6 +206,10 @@ app.post("/interactions", async function (req, res) {
           ],
         },
       });
+
+
+      // get response token
+      const responseToken = req.body.token;
 
       // create follow up message
       const startGameFollowUp = {
@@ -442,8 +442,8 @@ app.post("/interactions", async function (req, res) {
 
       // create update message content
       const joinedUsersUpdateParentMessageContent = {
-        content: ``,
         data: {
+          content: ``,
           embeds: [
             {
               type: "rich",
@@ -461,10 +461,14 @@ app.post("/interactions", async function (req, res) {
       };
 
       // update original message
-      await updateMessage(
+      /*await updateMessage(
         initialResponseToken,
         joinedUsersUpdateParentMessageContent
-      );
+      );*/
+
+      // update original message
+      await updateMessageNew(req.body.channel.id, req.body.message.id, joinedUsersUpdateParentMessageContent);
+      console.log("updating message successful");
 
       // send response to discord
       return res.send({
@@ -519,8 +523,8 @@ app.post("/interactions", async function (req, res) {
 
       // create update message content
       const joinedUsersUpdateParentMessageContent = {
-        content: ``,
         data: {
+          content: ``,
           embeds: [
             {
               type: "rich",
@@ -538,10 +542,7 @@ app.post("/interactions", async function (req, res) {
       };
 
       // update original message
-      await updateMessage(
-        initialResponseToken,
-        joinedUsersUpdateParentMessageContent
-      );
+      await updateMessageNew(req.body.channel.id, req.body.message.id, joinedUsersUpdateParentMessageContent);
 
       // send response to discord
       return res.send({
@@ -619,8 +620,8 @@ app.post("/interactions", async function (req, res) {
             console.log("Location assigned!");
           }
 
-          // get response token
-          const initialResponseToken = await getResponseToken(db, hostUserId);
+          // get message ID of parent message
+          const parentMessageId = req.body.message.message_reference.message_id;
 
           // get message ID
           const messageId = req.body.message.id;
@@ -660,10 +661,16 @@ app.post("/interactions", async function (req, res) {
           };
 
           // update main message
-          await updateMessage(initialResponseToken, updateMainMessage);
+          //await updateMessage(initialResponseToken, updateMainMessage);
+
+          // update main message
+          await updateMessageNew(req.body.channel.id, parentMessageId, updateMainMessage);
 
           // delete follow-up message
-          await DeleteFollowUpMessage(initialResponseToken, messageId);
+          //await DeleteFollowUpMessage(initialResponseToken, messageId);
+
+          // delelte follow-up message
+          await DeleteFollowUpMessageNew(req.body.channel.id, messageId);
 
           // send response to discord
           return res.send({
@@ -714,6 +721,9 @@ app.post("/interactions", async function (req, res) {
           // get response token
           const initialResponseToken = await getResponseToken(db, hostUserId);
 
+          // get message ID of parent message
+          const parentMessageId = req.body.message.message_reference.message_id;
+
           // get message ID
           const messageId = req.body.message.id;
 
@@ -752,10 +762,12 @@ app.post("/interactions", async function (req, res) {
           };
 
           // update main message
-          await updateMessage(initialResponseToken, updateMainMessage);
+          //await updateMessage(initialResponseToken, updateMainMessage);
+          await updateMessageNew(req.body.channel.id, parentMessageId, updateMainMessage);
 
           // delete follow-up message
-          await DeleteFollowUpMessage(initialResponseToken, messageId);
+          //await DeleteFollowUpMessage(initialResponseToken, messageId);
+          await DeleteFollowUpMessageNew(req.body.channel.id, messageId);
 
           // send response to discord
           return res.send({
@@ -809,6 +821,9 @@ app.post("/interactions", async function (req, res) {
           // get response token
           const initialResponseToken = await getResponseToken(db, hostUserId);
 
+          // get message ID of parent message
+          const parentMessageId = req.body.message.message_reference.message_id;
+
           // get message ID
           const messageId = req.body.message.id;
 
@@ -847,10 +862,12 @@ app.post("/interactions", async function (req, res) {
           };
 
           // update main message
-          await updateMessage(initialResponseToken, updateMainMessage);
+          //await updateMessage(initialResponseToken, updateMainMessage);
+          await updateMessageNew(req.body.channel.id, parentMessageId, updateMainMessage);
 
           // delete follow-up message
-          await DeleteFollowUpMessage(initialResponseToken, messageId);
+          //await DeleteFollowUpMessage(initialResponseToken, messageId);
+          await DeleteFollowUpMessageNew(req.body.channel.id, messageId);
 
           // send response to discord
           return res.send({
@@ -913,14 +930,14 @@ app.post("/interactions", async function (req, res) {
       // user who clicked "cancel" is host
       else {
         // fetch response token from parent message ID from the Host User
-        const responseTokenFromParentMessage = await getResponseToken(
+        /*const responseTokenFromParentMessage = await getResponseToken(
           db,
           hostUserId
         );
         if (!responseTokenFromParentMessage) {
           console.error("No stored response token found from parent message");
           return;
-        }
+        }*/
 
         // delete active game from database table active_games
         await deleteActiveGame(db, gameId, hostUserId);
@@ -937,10 +954,8 @@ app.post("/interactions", async function (req, res) {
         await deleteMoleLocations(db, gameId);
 
         // delete follow-up message
-        await DeleteFollowUpMessage(
-          responseTokenFromParentMessage,
-          req.body.message.id
-        );
+        //await DeleteFollowUpMessage(responseTokenFromParentMessage, req.body.message.id);
+        await DeleteFollowUpMessageNew(req.body.channel.id, req.body.message.id);
 
         // update parent message
         const updateParentMessageContent = {
@@ -957,13 +972,11 @@ app.post("/interactions", async function (req, res) {
             ],
           },
         };
-        await updateMessage(
-          responseTokenFromParentMessage,
-          updateParentMessageContent
-        );
+        //await updateMessage(responseTokenFromParentMessage, updateParentMessageContent);
+        await updateMessageNew(req.body.channel.id, req.body.message.message_reference.message_id, updateParentMessageContent);
 
         // Delete the dataset with the message and token after updating the message (it's not needed anymore)
-        await deleteMessageWithToken(db, hostUserId);
+        //await deleteMessageWithToken(db, hostUserId);
 
         // send response to discord
         return res.send({
@@ -990,22 +1003,30 @@ app.post("/interactions", async function (req, res) {
         return res.send({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: `You are not the host of this game to cancel it! Please refer to <@${hostUserId}>`,
+            content: ``,
             flags: InteractionResponseFlags.EPHEMERAL,
+            embeds: [
+              {
+                type: "rich",
+                title: "You are not the host of this game!",
+                description: `Please refer to <@${hostUserId}>`,
+                color: 0xff0000,
+              },
+            ],
           },
         });
       }
       // user who clicked "cancel" is host
       else {
         // fetch response token from parent message ID from the Host User
-        const responseTokenFromParentMessage = await getResponseToken(
+        /*const responseTokenFromParentMessage = await getResponseToken(
           db,
           hostUserId
         );
         if (!responseTokenFromParentMessage) {
           console.error("No stored response token found from parent message");
           return;
-        }
+        }*/
 
         // delete active game from database table active_games
         await deleteActiveGame(db, gameId, hostUserId);
@@ -1018,7 +1039,7 @@ app.post("/interactions", async function (req, res) {
         // delete locations from this game
         await deleteLocations(db, gameId);
 
-        // update parent message
+        // update message
         const updateParentMessageContent = {
           data: {
             content: ``,
@@ -1033,16 +1054,11 @@ app.post("/interactions", async function (req, res) {
             ],
           },
         };
-        // test
-        //const token = req.body.token;
-        //test
-        await updateMessage(
-          responseTokenFromParentMessage,
-          updateParentMessageContent
-        );
+        //await updateMessage(responseTokenFromParentMessage, updateParentMessageContent);
+        await updateMessageNew(req.body.channel.id, req.body.message.id, updateParentMessageContent);
 
         // Delete the dataset with the message and token after updating the message (it's not needed anymore)
-        await deleteMessageWithToken(db, hostUserId);
+        //await deleteMessageWithToken(db, hostUserId);
 
         // send response to discord
         return res.send({

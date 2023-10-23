@@ -75,11 +75,40 @@ export function generateUniqueGameId() {
   return gameId;
 }
 
+// get message data from slash command
+export function getMessageData(responseToken) {
+  try {
+    DiscordRequest(
+      `webhooks/${process.env.APP_ID}/${responseToken}/messages/@original`,
+      {
+        method: "GET",
+      }
+    );
+  } catch (err) {
+    console.error("Error updating message:", err);
+  }
+}
+
 // update parent message using "PATCH" method
 export async function updateMessage(responseToken, messageContent) {
   try {
     await DiscordRequest(
       `webhooks/${process.env.APP_ID}/${responseToken}/messages/@original`,
+      {
+        method: "PATCH",
+        body: messageContent.data,
+      }
+    );
+  } catch (err) {
+    console.error("Error updating message:", err);
+  }
+}
+
+// update parent message using channel ID and message ID
+export async function updateMessageNew(channelId, messageId, messageContent) {
+  try {
+    await DiscordRequest(
+      `channels/${channelId}/messages/${messageId}`,
       {
         method: "PATCH",
         body: messageContent.data,
@@ -111,6 +140,20 @@ export async function DeleteFollowUpMessage(initialResponseToken, messageId) {
   try {
     await DiscordRequest(
       `webhooks/${process.env.APP_ID}/${initialResponseToken}/messages/${messageId}`,
+    {
+      method: "DELETE",
+    }
+    );
+  } catch (err) {
+    console.error("Error deleting follow-up message:", err);
+  }
+}
+
+// delete follow up message with channel ID and message ID
+export async function DeleteFollowUpMessageNew(channelId, messageId) {
+  try {
+    await DiscordRequest(
+      `channels/${channelId}/messages/${messageId}`,
     {
       method: "DELETE",
     }

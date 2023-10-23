@@ -7,9 +7,7 @@ export async function createInitialTables(db) {
           game_id TEXT PRIMARY KEY,
           host_user TEXT,
           max_players INTEGER,
-          message_id TEXT,
-          selected_location TEXT,
-          FOREIGN KEY (message_id) REFERENCES messages (message_id)
+          selected_location TEXT
         )
     `);
 
@@ -70,7 +68,6 @@ export async function getActiveGames(db, gameId = null) {
             game_id: row.game_id,
             host_user: row.host_user,
             max_players: row.max_players,
-            message_id: row.message_id,
           }));
           console.log("Select from getActiveGames successful!");
           resolve(games);
@@ -89,7 +86,6 @@ export async function getActiveGames(db, gameId = null) {
               game_id: row.game_id,
               host_user: row.host_user,
               max_players: row.max_players,
-              message_id: row.message_id,
             }));
             console.log("Select from getActiveGames successful!");
             resolve(games);
@@ -105,12 +101,11 @@ export async function insertActiveGame(
   db,
   gameId,
   hostUserId,
-  maxPlayers,
-  messageId
+  maxPlayers
 ) {
   db.run(
-    "INSERT INTO active_games (game_id, host_user, max_players, message_id) VALUES (?, ?, ?, ?)",
-    [gameId, hostUserId, maxPlayers, messageId],
+    "INSERT INTO active_games (game_id, host_user, max_players) VALUES (?, ?, ?)",
+    [gameId, hostUserId, maxPlayers],
     (err) => {
       if (err) {
         console.error("Error inserting game data:", err);
@@ -125,12 +120,13 @@ export async function insertActiveGame(
 export async function insertMessageData(
   db,
   messageId,
+  channelId,
   hostUserId,
   responseToken
 ) {
   db.run(
-    "INSERT INTO messages (message_id, host_user, response_token) VALUES (?, ?, ?)",
-    [messageId, hostUserId, responseToken],
+    "INSERT INTO messages (message_id, channel_id, host_user, response_token) VALUES (?, ?, ?, ?)",
+    [messageId, channelId, hostUserId, responseToken],
     (err) => {
       if (err) {
         console.error("Error inserting message data:", err);

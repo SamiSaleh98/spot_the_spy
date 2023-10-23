@@ -82,7 +82,7 @@ export async function updateMessage(responseToken, messageContent) {
       `webhooks/${process.env.APP_ID}/${responseToken}/messages/@original`,
       {
         method: "PATCH",
-        body: messageContent,
+        body: messageContent.data,
       }
     );
   } catch (err) {

@@ -175,7 +175,7 @@ app.post("/interactions", async function (req, res) {
       res.send({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-          content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
+          content: ``,
           components: [
             {
               type: 1,
@@ -195,6 +195,19 @@ app.post("/interactions", async function (req, res) {
               ],
             },
           ],
+          embeds: [
+            {
+              type: "rich",
+              title: "Game started",
+              description: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
+              color: 0xff00bb,
+              image: {
+                url: "https://i.imgur.com/HX5mdZw.png",
+                height: 500,
+                width: 500,
+              },
+            },
+          ],
         },
       });
 
@@ -202,7 +215,7 @@ app.post("/interactions", async function (req, res) {
       const startGameFollowUp = {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
         data: {
-          content: `<@${hostUserId}> can start or cancel the game whenever they want here!`,
+          content: "",
           components: [
             {
               type: 1,
@@ -220,6 +233,14 @@ app.post("/interactions", async function (req, res) {
                   style: 4,
                 },
               ],
+            },
+          ],
+          embeds: [
+            {
+              type: "rich",
+              title: "",
+              description: `<@${hostUserId}> can start or cancel the game whenever they want here!`,
+              color: 0xff00bb,
             },
           ],
         },
@@ -362,8 +383,16 @@ app.post("/interactions", async function (req, res) {
         return res.send({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: "You've already joined this game!",
+            content: "",
             flags: InteractionResponseFlags.EPHEMERAL,
+            embeds: [
+              {
+                type: "rich",
+                title: "You have already joined this game!",
+                description: "",
+                color: 0x008000,
+              },
+            ],
           },
         });
       }
@@ -377,8 +406,17 @@ app.post("/interactions", async function (req, res) {
         return res.send({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: "This game is already full. You cannot join at this time!",
+            content: "",
             flags: InteractionResponseFlags.EPHEMERAL,
+            embeds: [
+              {
+                type: "rich",
+                title:
+                  "This game is already full. You cannot join at this time!",
+                description: "",
+                color: 0xff0000,
+              },
+            ],
           },
         });
       }
@@ -404,7 +442,22 @@ app.post("/interactions", async function (req, res) {
 
       // create update message content
       const joinedUsersUpdateParentMessageContent = {
-        content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
+        content: ``,
+        data: {
+          embeds: [
+            {
+              type: "rich",
+              title: "Game started",
+              description: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
+              color: 0xff00bb,
+              image: {
+                url: "https://i.imgur.com/HX5mdZw.png",
+                height: 500,
+                width: 500,
+              },
+            },
+          ],
+        },
       };
 
       // update original message
@@ -433,8 +486,16 @@ app.post("/interactions", async function (req, res) {
         return res.send({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: "You haven't joined this game session yet!",
+            content: "",
             flags: InteractionResponseFlags.EPHEMERAL,
+            embeds: [
+              {
+                type: "rich",
+                title: "You haven't joined this game session yet!",
+                description: "",
+                color: 0xff0000,
+              },
+            ],
           },
         });
       }
@@ -458,7 +519,22 @@ app.post("/interactions", async function (req, res) {
 
       // create update message content
       const joinedUsersUpdateParentMessageContent = {
-        content: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
+        content: ``,
+        data: {
+          embeds: [
+            {
+              type: "rich",
+              title: "Game started",
+              description: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
+              color: 0xff00bb,
+              image: {
+                url: "https://i.imgur.com/HX5mdZw.png",
+                height: 500,
+                width: 500,
+              },
+            },
+          ],
+        },
       };
 
       // update original message
@@ -498,8 +574,17 @@ app.post("/interactions", async function (req, res) {
           return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-              content: `The minimum amount of players to start the game is 4. Please make sure more players join your game!`,
+              content: ``,
               flags: InteractionResponseFlags.EPHEMERAL,
+              embeds: [
+                {
+                  type: "rich",
+                  title:
+                    "The minimum amount of players to start the game is 4.",
+                  description: "Please make sure more players join your game!",
+                  color: 0xff0000,
+                },
+              ],
             },
           });
         }
@@ -542,26 +627,36 @@ app.post("/interactions", async function (req, res) {
 
           // create update message content
           const updateMainMessage = {
-            content: `The game hosted by <@${hostUserId}> is currently running ...`,
-            components: [
-              {
-                type: 1,
-                components: [
-                  {
-                    type: 2,
-                    custom_id: `show_my_role_button_${gameId}`,
-                    label: "Show my Role",
-                    style: 1,
-                  },
-                  {
-                    type: 2,
-                    custom_id: `cancel_game_2_button_${gameId}`,
-                    label: "Cancel game",
-                    style: 4,
-                  },
-                ],
-              },
-            ],
+            data: {
+              content: ``,
+              components: [
+                {
+                  type: 1,
+                  components: [
+                    {
+                      type: 2,
+                      custom_id: `show_my_role_button_${gameId}`,
+                      label: "Show my Role",
+                      style: 1,
+                    },
+                    {
+                      type: 2,
+                      custom_id: `cancel_game_2_button_${gameId}`,
+                      label: "Cancel game",
+                      style: 4,
+                    },
+                  ],
+                },
+              ],
+              embeds: [
+                {
+                  type: "rich",
+                  title: "Game running",
+                  description: `The game hosted by <@${hostUserId}> is currently running ...`,
+                  color: 0xff00bb,
+                },
+              ],
+            },
           };
 
           // update main message
@@ -624,26 +719,36 @@ app.post("/interactions", async function (req, res) {
 
           // create update message content
           const updateMainMessage = {
-            content: `The game hosted by <@${hostUserId}> is currently running ...`,
-            components: [
-              {
-                type: 1,
-                components: [
-                  {
-                    type: 2,
-                    custom_id: `show_my_role_button_${gameId}`,
-                    label: "Show my Role",
-                    style: 1,
-                  },
-                  {
-                    type: 2,
-                    custom_id: `cancel_game_2_button_${gameId}`,
-                    label: "Cancel game",
-                    style: 4,
-                  },
-                ],
-              },
-            ],
+            data: {
+              content: ``,
+              components: [
+                {
+                  type: 1,
+                  components: [
+                    {
+                      type: 2,
+                      custom_id: `show_my_role_button_${gameId}`,
+                      label: "Show my Role",
+                      style: 1,
+                    },
+                    {
+                      type: 2,
+                      custom_id: `cancel_game_2_button_${gameId}`,
+                      label: "Cancel game",
+                      style: 4,
+                    },
+                  ],
+                },
+              ],
+              embeds: [
+                {
+                  type: "rich",
+                  title: "Game running",
+                  description: `The game hosted by <@${hostUserId}> is currently running ...`,
+                  color: 0xff00bb,
+                },
+              ],
+            },
           };
 
           // update main message
@@ -709,26 +814,36 @@ app.post("/interactions", async function (req, res) {
 
           // create update message content
           const updateMainMessage = {
-            content: `The game hosted by <@${hostUserId}> is currently running ...`,
-            components: [
-              {
-                type: 1,
-                components: [
-                  {
-                    type: 2,
-                    custom_id: `show_my_role_button_${gameId}`,
-                    label: "Show my Role",
-                    style: 1,
-                  },
-                  {
-                    type: 2,
-                    custom_id: `cancel_game_2_button_${gameId}`,
-                    label: "Cancel game",
-                    style: 4,
-                  },
-                ],
-              },
-            ],
+            data: {
+              content: ``,
+              components: [
+                {
+                  type: 1,
+                  components: [
+                    {
+                      type: 2,
+                      custom_id: `show_my_role_button_${gameId}`,
+                      label: "Show my Role",
+                      style: 1,
+                    },
+                    {
+                      type: 2,
+                      custom_id: `cancel_game_2_button_${gameId}`,
+                      label: "Cancel game",
+                      style: 4,
+                    },
+                  ],
+                },
+              ],
+              embeds: [
+                {
+                  type: "rich",
+                  title: "Game running",
+                  description: `The game hosted by <@${hostUserId}> is currently running ...`,
+                  color: 0xff00bb,
+                },
+              ],
+            },
           };
 
           // update main message
@@ -749,8 +864,16 @@ app.post("/interactions", async function (req, res) {
         return res.send({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: `You are not the host of this game. Please refer to <@${hostUserId}>`,
+            content: ``,
             flags: InteractionResponseFlags.EPHEMERAL,
+            embeds: [
+              {
+                type: "rich",
+                title: "You are not the host of this game.",
+                description: `Please refer to <@${hostUserId}>`,
+                color: 0xff0000,
+              },
+            ],
           },
         });
       }
@@ -774,8 +897,16 @@ app.post("/interactions", async function (req, res) {
         return res.send({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: `You are not the host of this game to cancel it! Please refer to <@${hostUserId}>`,
+            content: ``,
             flags: InteractionResponseFlags.EPHEMERAL,
+            embeds: [
+              {
+                type: "rich",
+                title: "You are not the host of this game!",
+                description: `Please refer to <@${hostUserId}>`,
+                color: 0xff0000,
+              },
+            ],
           },
         });
       }
@@ -813,8 +944,18 @@ app.post("/interactions", async function (req, res) {
 
         // update parent message
         const updateParentMessageContent = {
-          content: `<@${hostUserId}> canceled this game. Use the command /start to start a new one`,
-          components: [],
+          data: {
+            content: "",
+            components: [],
+            embeds: [
+              {
+                type: "rich",
+                title: "Game canceled",
+                description: `<@${hostUserId}> canceled this game. Use the command /start to start a new one!`,
+                color: 0xff00bb,
+              },
+            ],
+          },
         };
         await updateMessage(
           responseTokenFromParentMessage,
@@ -879,8 +1020,18 @@ app.post("/interactions", async function (req, res) {
 
         // update parent message
         const updateParentMessageContent = {
-          content: `<@${hostUserId}> canceled this game. Use the command /start to start a new one`,
-          components: [],
+          data: {
+            content: ``,
+            components: [],
+            embeds: [
+              {
+                type: "rich",
+                title: "Game canceled",
+                description: `<@${hostUserId}> canceled this game. Use the command /start to start a new one!`,
+                color: 0xff00bb,
+              },
+            ],
+          },
         };
         // test
         //const token = req.body.token;
@@ -988,8 +1139,16 @@ app.post("/interactions", async function (req, res) {
           return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-              content: `You have no role assigned. You are probably not in this game session`,
+              content: ``,
               flags: InteractionResponseFlags.EPHEMERAL,
+              embeds: [
+                {
+                  type: "rich",
+                  title: "You have no role assigned",
+                  description: `You are probably not in this game session`,
+                  color: 0xff0000,
+                },
+              ],
             },
           });
         }
@@ -1064,7 +1223,7 @@ app.post("/interactions", async function (req, res) {
                   },
                 ],
               },
-            }); 
+            });
           }
           // user is investigator
           else {
@@ -1099,8 +1258,17 @@ app.post("/interactions", async function (req, res) {
           return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-              content: `You have no role assigned. You are probably not in this game session`,
+              content: ``,
               flags: InteractionResponseFlags.EPHEMERAL,
+              embeds: [
+                {
+                  type: "rich",
+                  title: "You have no role assigned",
+                  description: `You are probably not in this game session`,
+                  color: 0xff0000,
+                },
+              ],
+              
             },
           });
         }
@@ -1213,8 +1381,16 @@ app.post("/interactions", async function (req, res) {
           return res.send({
             type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
             data: {
-              content: `You have no role assigned. You are probably not in this game session`,
+              content: ``,
               flags: InteractionResponseFlags.EPHEMERAL,
+              embeds: [
+                {
+                  type: "rich",
+                  title: "You have no role assigned",
+                  description: `You are probably not in this game session`,
+                  color: 0xff0000,
+                },
+              ],
             },
           });
         }

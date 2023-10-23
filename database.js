@@ -26,6 +26,7 @@ export async function createInitialTables(db) {
   db.run(`
         CREATE TABLE IF NOT EXISTS messages (
             message_id TEXT PRIMARY KEY,
+            channel_id TEXT,
             host_user TEXT,
             response_token TEXT,
             FOREIGN KEY (host_user) REFERENCES active_games (host_user)

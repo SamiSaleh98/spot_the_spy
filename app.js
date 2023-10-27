@@ -20,6 +20,8 @@ import {
   shuffleArray,
   getRandomLocations,
   getMessageData,
+  updateFollowUpMessage,
+  createMessage,
 } from "./utils.js";
 
 import {
@@ -195,7 +197,7 @@ app.post("/interactions", async function (req, res) {
             {
               type: "rich",
               title: "Game started",
-              description: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
+              description: `**<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!**\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
               color: 0xff00bb,
               image: {
                 url: "https://i.imgur.com/HX5mdZw.png",
@@ -206,7 +208,6 @@ app.post("/interactions", async function (req, res) {
           ],
         },
       });
-
 
       // get response token
       const responseToken = req.body.token;
@@ -448,7 +449,7 @@ app.post("/interactions", async function (req, res) {
             {
               type: "rich",
               title: "Game started",
-              description: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
+              description: `**<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!**\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
               color: 0xff00bb,
               image: {
                 url: "https://i.imgur.com/HX5mdZw.png",
@@ -467,7 +468,11 @@ app.post("/interactions", async function (req, res) {
       );*/
 
       // update original message
-      await updateMessageNew(req.body.channel.id, req.body.message.id, joinedUsersUpdateParentMessageContent);
+      await updateMessageNew(
+        req.body.channel.id,
+        req.body.message.id,
+        joinedUsersUpdateParentMessageContent
+      );
       console.log("updating message successful");
 
       // send response to discord
@@ -529,7 +534,7 @@ app.post("/interactions", async function (req, res) {
             {
               type: "rich",
               title: "Game started",
-              description: `<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
+              description: `**<@${hostUserId}> started a game with a maximum of ${maxPlayers} players!**\n \nPlease join a voice channel to start playing the game!\n \nJoined Players:\n${joinedUsersList}`,
               color: 0xff00bb,
               image: {
                 url: "https://i.imgur.com/HX5mdZw.png",
@@ -542,7 +547,11 @@ app.post("/interactions", async function (req, res) {
       };
 
       // update original message
-      await updateMessageNew(req.body.channel.id, req.body.message.id, joinedUsersUpdateParentMessageContent);
+      await updateMessageNew(
+        req.body.channel.id,
+        req.body.message.id,
+        joinedUsersUpdateParentMessageContent
+      );
 
       // send response to discord
       return res.send({
@@ -642,8 +651,8 @@ app.post("/interactions", async function (req, res) {
                     },
                     {
                       type: 2,
-                      custom_id: `cancel_game_2_button_${gameId}`,
-                      label: "Cancel game",
+                      custom_id: `end_game_button_${gameId}`,
+                      label: "End game",
                       style: 4,
                     },
                   ],
@@ -664,7 +673,11 @@ app.post("/interactions", async function (req, res) {
           //await updateMessage(initialResponseToken, updateMainMessage);
 
           // update main message
-          await updateMessageNew(req.body.channel.id, parentMessageId, updateMainMessage);
+          await updateMessageNew(
+            req.body.channel.id,
+            parentMessageId,
+            updateMainMessage
+          );
 
           // delete follow-up message
           //await DeleteFollowUpMessage(initialResponseToken, messageId);
@@ -743,8 +756,8 @@ app.post("/interactions", async function (req, res) {
                     },
                     {
                       type: 2,
-                      custom_id: `cancel_game_2_button_${gameId}`,
-                      label: "Cancel game",
+                      custom_id: `end_game_button_${gameId}`,
+                      label: "End game",
                       style: 4,
                     },
                   ],
@@ -763,7 +776,11 @@ app.post("/interactions", async function (req, res) {
 
           // update main message
           //await updateMessage(initialResponseToken, updateMainMessage);
-          await updateMessageNew(req.body.channel.id, parentMessageId, updateMainMessage);
+          await updateMessageNew(
+            req.body.channel.id,
+            parentMessageId,
+            updateMainMessage
+          );
 
           // delete follow-up message
           //await DeleteFollowUpMessage(initialResponseToken, messageId);
@@ -843,8 +860,8 @@ app.post("/interactions", async function (req, res) {
                     },
                     {
                       type: 2,
-                      custom_id: `cancel_game_2_button_${gameId}`,
-                      label: "Cancel game",
+                      custom_id: `end_game_button_${gameId}`,
+                      label: "End game",
                       style: 4,
                     },
                   ],
@@ -863,7 +880,11 @@ app.post("/interactions", async function (req, res) {
 
           // update main message
           //await updateMessage(initialResponseToken, updateMainMessage);
-          await updateMessageNew(req.body.channel.id, parentMessageId, updateMainMessage);
+          await updateMessageNew(
+            req.body.channel.id,
+            parentMessageId,
+            updateMainMessage
+          );
 
           // delete follow-up message
           //await DeleteFollowUpMessage(initialResponseToken, messageId);
@@ -896,17 +917,164 @@ app.post("/interactions", async function (req, res) {
       }
     }
 
-    // if clicked button is "cancel game" ----------------------------------------------------------------------------------------------------------------------------------
+    // cancel game button----------------------------------------------------------------------------------------------------------------------------------------------
     else if (componentId.startsWith("cancel_game_button_")) {
-      // fetch game ID associated with this game
+      // fetch game ID associated with this button
       const gameId = componentId.replace("cancel_game_button_", "");
+
+      // get this active game's data
+      const activeGameData = await getActiveGames(db, gameId);
+      const hostUserId = activeGameData[0].host_user;
+      console.log("hostUserId:", hostUserId);
+
+      // check if the person who clicks the button is the host
+      const userIsHost = activeGameData.some(
+        (game) => game.host_user === userId
+      );
+      // user is not host
+      if (!userIsHost) {
+        // send a message saying you are not the host to cancel
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: ``,
+            flags: InteractionResponseFlags.EPHEMERAL,
+            embeds: [
+              {
+                type: "rich",
+                title: "You are not the host of this game!",
+                description: `Please refer to <@${hostUserId}>`,
+                color: 0xff0000,
+              },
+            ],
+          },
+        });
+      }
+
+      // user is host
+      else {
+        // get interaction ID of this interaction (button)
+        const interactionId = req.body.id;
+
+        // get interaction token
+        const interactionToken = req.body.token;
+
+        // message ID of this message
+        const messageId = req.body.message.id;
+
+        // parent message ID (main message)
+        const parentMessageId = req.body.message.message_reference.message_id;
+
+        // insert interaction (message) data to database
+        await insertMessageData(
+          db,
+          messageId,
+          req.body.channel.id,
+          hostUserId,
+          interactionToken
+        );
+
+        // create follow up message content
+        const followUpMessageContent = {
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: ``,
+            flags: InteractionResponseFlags.EPHEMERAL,
+            components: [
+              {
+                type: 1,
+                components: [
+                  {
+                    type: 2,
+                    custom_id: `cancel_game_agree_button_${gameId}_${messageId}_${parentMessageId}`,
+                    style: 3,
+                    emoji: {
+                      id: null,
+                      name: "✔️",
+                    },
+                  },
+                  {
+                    type: 2,
+                    custom_id: `cancel_game_refuse_button`,
+                    style: 4,
+                    emoji: {
+                      id: null,
+                      name: "✖️",
+                    },
+                  },
+                ],
+              },
+            ],
+            embeds: [
+              {
+                type: "rich",
+                title: "Are you sure you want to cancel this game?",
+                description: ``,
+                color: 0xff00bb,
+              },
+            ],
+          },
+        };
+
+        await createMessage(
+          interactionId,
+          interactionToken,
+          followUpMessageContent
+        );
+      }
+    }
+    // if clicked button is cancel_game_refuse_button -----------------------------------------------------------------------------------------------------------------
+    else if (componentId.startsWith("cancel_game_refuse_button")) {
+      // get response token from original message
+      const token = await getResponseToken(db, userId);
+
+      // get this message's ID
+      const messageId = req.body.message.id;
+
+      // create upate message content
+      const updateMessageContent = {
+        data: {
+          content: ``,
+          flags: InteractionResponseFlags.EPHEMERAL,
+          components: [],
+          embeds: [
+            {
+              type: "rich",
+              title: "This game has not been canceled!",
+              description: ``,
+              color: 0xff0000,
+            },
+          ],
+        },
+      };
+
+      // update this message
+      await updateFollowUpMessage(token, messageId, updateMessageContent);
+
+      // delete message data from database
+      await deleteMessageWithToken(db, userId);
+
+      // send response to discord
+      return res.send({
+        type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+      });
+    }
+    // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    // if clicked button is "cancel game agree" ----------------------------------------------------------------------------------------------------------------------------------
+    else if (componentId.startsWith("cancel_game_agree_button_")) {
+      // create combi string with game ID and parent message ID
+      const combiString = componentId.replace("cancel_game_agree_button_", "");
+
+      // fetch game ID and parent message ID associated with this game
+      const [gameId, parentMessageId, mainMessageId] = combiString.split("_");
 
       // get this active game's data
       const activeGameData = await getActiveGames(db, gameId);
       const hostUserId = activeGameData[0].host_user;
 
       // check if the person who clicks the button is the host
-      const userIsHost = activeGameData.some(
+      /*const userIsHost = activeGameData.some(
         (game) => game.host_user === userId
       );
       if (!userIsHost) {
@@ -926,11 +1094,11 @@ app.post("/interactions", async function (req, res) {
             ],
           },
         });
-      }
+      }*/
       // user who clicked "cancel" is host
-      else {
-        // fetch response token from parent message ID from the Host User
-        /*const responseTokenFromParentMessage = await getResponseToken(
+      //else {
+      // fetch response token from parent message ID from the Host User
+      /*const responseTokenFromParentMessage = await getResponseToken(
           db,
           hostUserId
         );
@@ -939,63 +1107,237 @@ app.post("/interactions", async function (req, res) {
           return;
         }*/
 
-        // delete active game from database table active_games
-        await deleteActiveGame(db, gameId, hostUserId);
-        console.log("Active game deleted!");
+      // get response token
+      const token = await getResponseToken(db, hostUserId);
 
-        // delete joined users from this game
-        await deleteJoinedUsers(db, gameId);
-        console.log("Joined users deleted!");
+      // get this message's ID
+      const messageId = req.body.message.id;
 
-        // delete locations from this game
-        await deleteLocations(db, gameId);
+      // delete active game from database table active_games
+      await deleteActiveGame(db, gameId, hostUserId);
+      console.log("Active game deleted!");
 
-        // delete mole locations from this game
-        await deleteMoleLocations(db, gameId);
+      // delete joined users from this game
+      await deleteJoinedUsers(db, gameId);
+      console.log("Joined users deleted!");
 
-        // delete follow-up message
-        //await DeleteFollowUpMessage(responseTokenFromParentMessage, req.body.message.id);
-        await DeleteFollowUpMessageNew(req.body.channel.id, req.body.message.id);
+      // delete locations from this game
+      await deleteLocations(db, gameId);
 
-        // update parent message
-        const updateParentMessageContent = {
-          data: {
-            content: "",
-            components: [],
-            embeds: [
-              {
-                type: "rich",
-                title: "Game canceled",
-                description: `<@${hostUserId}> canceled this game. Use the command /start to start a new one!`,
-                color: 0xff00bb,
-              },
-            ],
-          },
-        };
-        //await updateMessage(responseTokenFromParentMessage, updateParentMessageContent);
-        await updateMessageNew(req.body.channel.id, req.body.message.message_reference.message_id, updateParentMessageContent);
+      // delete mole locations from this game
+      await deleteMoleLocations(db, gameId);
 
-        // Delete the dataset with the message and token after updating the message (it's not needed anymore)
-        //await deleteMessageWithToken(db, hostUserId);
+      // delete follow-up message
+      //await DeleteFollowUpMessage(responseTokenFromParentMessage, req.body.message.id);
+      await DeleteFollowUpMessageNew(req.body.channel.id, parentMessageId);
 
-        // send response to discord
-        return res.send({
-          type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
-        });
-      }
+      // update main message
+      const updateMainMessageContent = {
+        data: {
+          content: "",
+          components: [],
+          embeds: [
+            {
+              type: "rich",
+              title: "Game canceled",
+              description: `<@${hostUserId}> canceled this game. Use the command /start to start a new one!`,
+              color: 0xff00bb,
+            },
+          ],
+        },
+      };
+      //await updateMessage(responseTokenFromParentMessage, updateParentMessageContent);
+      await updateMessageNew(
+        req.body.channel.id,
+        mainMessageId,
+        updateMainMessageContent
+      );
+
+      // create upate message content
+      const updateMessageContent = {
+        data: {
+          content: ``,
+          flags: InteractionResponseFlags.EPHEMERAL,
+          components: [],
+          embeds: [
+            {
+              type: "rich",
+              title: "This game has been canceled successfully!",
+              description: ``,
+              color: 0x008000,
+            },
+          ],
+        },
+      };
+
+      // update this message
+      await updateFollowUpMessage(token, messageId, updateMessageContent);
+
+      // Delete the dataset with the message and token after updating the message (it's not needed anymore)
+      await deleteMessageWithToken(db, hostUserId);
+
+      // send response to discord
+      return res.send({
+        type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+      });
+      //}
     }
 
-    // if clicked button is "cancel game 2" ----------------------------------------------------------------------------------------------------------------------------------
-    else if (componentId.startsWith("cancel_game_2_button_")) {
-      // fetch game ID associated with this game
-      const gameId = componentId.replace("cancel_game_2_button_", "");
+        // end game button----------------------------------------------------------------------------------------------------------------------------------------------
+        else if (componentId.startsWith("end_game_button_")) {
+          // fetch game ID associated with this button
+          const gameId = componentId.replace("end_game_button_", "");
+    
+          // get this active game's data
+          const activeGameData = await getActiveGames(db, gameId);
+          const hostUserId = activeGameData[0].host_user;
+    
+          // check if the person who clicks the button is the host
+          const userIsHost = activeGameData.some(
+            (game) => game.host_user === userId
+          );
+          // user is not host
+          if (!userIsHost) {
+            // send a message saying you are not the host to cancel
+            return res.send({
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: ``,
+                flags: InteractionResponseFlags.EPHEMERAL,
+                embeds: [
+                  {
+                    type: "rich",
+                    title: "You are not the host of this game!",
+                    description: `Please refer to <@${hostUserId}>`,
+                    color: 0xff0000,
+                  },
+                ],
+              },
+            });
+          }
+    
+          // user is host
+          else {
+            // get interaction ID of this interaction (button)
+            const interactionId = req.body.id;
+    
+            // get interaction token
+            const interactionToken = req.body.token;
+    
+            // message ID of this message
+            const messageId = req.body.message.id;
+    
+            // insert interaction (message) data to database
+            await insertMessageData(
+              db,
+              messageId,
+              req.body.channel.id,
+              hostUserId,
+              interactionToken
+            );
+    
+            // create follow up message content
+            const followUpMessageContent = {
+              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+              data: {
+                content: ``,
+                flags: InteractionResponseFlags.EPHEMERAL,
+                components: [
+                  {
+                    type: 1,
+                    components: [
+                      {
+                        type: 2,
+                        custom_id: `end_game_agree_button_${gameId}_${messageId}`,
+                        style: 3,
+                        emoji: {
+                          id: null,
+                          name: "✔️",
+                        },
+                      },
+                      {
+                        type: 2,
+                        custom_id: `end_game_refuse_button`,
+                        style: 4,
+                        emoji: {
+                          id: null,
+                          name: "✖️",
+                        },
+                      },
+                    ],
+                  },
+                ],
+                embeds: [
+                  {
+                    type: "rich",
+                    title: "Are you sure that your game is finished and you want to end it?",
+                    description: ``,
+                    color: 0xff00bb,
+                  },
+                ],
+              },
+            };
+    
+            await createMessage(
+              interactionId,
+              interactionToken,
+              followUpMessageContent
+            );
+          }
+        }
+
+        // if clicked button is end_game_button_refuse -----------------------------------------------------------------------------------------------------------------
+    else if (componentId.startsWith("end_game_refuse_button")) {
+      // get response token from original message
+      const token = await getResponseToken(db, userId);
+
+      // get this message's ID
+      const messageId = req.body.message.id;
+
+      // create upate message content
+      const updateMessageContent = {
+        data: {
+          content: ``,
+          flags: InteractionResponseFlags.EPHEMERAL,
+          components: [],
+          embeds: [
+            {
+              type: "rich",
+              title: "This game has not been ended!",
+              description: ``,
+              color: 0xff0000,
+            },
+          ],
+        },
+      };
+
+      // update this message
+      await updateFollowUpMessage(token, messageId, updateMessageContent);
+
+      // delete message data from database
+      await deleteMessageWithToken(db, userId);
+
+      // send response to discord
+      return res.send({
+        type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+      });
+    }
+
+    // if clicked button is "end game agree" ----------------------------------------------------------------------------------------------------------------------------------
+    else if (componentId.startsWith("end_game_agree_button_")) {
+
+      // fetch combi string with the parent message ID and game ID
+      const combiString = componentId.replace("end_game_agree_button_", "");
+
+      // extract game ID and parent message ID
+      const [gameId, parentMessageId] = combiString.split("_");
 
       // get this active game's data
       const activeGameData = await getActiveGames(db, gameId);
       const hostUserId = activeGameData[0].host_user;
 
       // check if the person who clicks the button is the host
-      const userIsHost = activeGameData.some(
+      /*const userIsHost = activeGameData.some(
         (game) => game.host_user === userId
       );
       if (!userIsHost) {
@@ -1015,9 +1357,9 @@ app.post("/interactions", async function (req, res) {
             ],
           },
         });
-      }
+      }*/
       // user who clicked "cancel" is host
-      else {
+      //else {
         // fetch response token from parent message ID from the Host User
         /*const responseTokenFromParentMessage = await getResponseToken(
           db,
@@ -1048,23 +1390,52 @@ app.post("/interactions", async function (req, res) {
               {
                 type: "rich",
                 title: "Game canceled",
-                description: `<@${hostUserId}> canceled this game. Use the command /start to start a new one!`,
+                description: `<@${hostUserId}> ended this game.\n\n**GG**\n\nUse the command /start to play again!`,
                 color: 0xff00bb,
               },
             ],
           },
         };
         //await updateMessage(responseTokenFromParentMessage, updateParentMessageContent);
-        await updateMessageNew(req.body.channel.id, req.body.message.id, updateParentMessageContent);
+        await updateMessageNew(
+          req.body.channel.id,
+          parentMessageId,
+          updateParentMessageContent
+        );
 
-        // Delete the dataset with the message and token after updating the message (it's not needed anymore)
-        //await deleteMessageWithToken(db, hostUserId);
+        // fetch token from parent message
+        const token = await getResponseToken(db, hostUserId);
+
+        // fetch message ID of this message
+        const messageId = req.body.message.id;
+
+        // create upate message content
+      const updateMessageContent = {
+        data: {
+          content: ``,
+          flags: InteractionResponseFlags.EPHEMERAL,
+          components: [],
+          embeds: [
+            {
+              type: "rich",
+              title: "This game has been ended successfully!",
+              description: ``,
+              color: 0x008000,
+            },
+          ],
+        },
+      };
+
+      await updateFollowUpMessage(token, messageId, updateMessageContent);
+
+      // Delete the dataset with the message and token after updating the message (it's not needed anymore)
+      await deleteMessageWithToken(db, hostUserId);
 
         // send response to discord
         return res.send({
           type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
         });
-      }
+      //}
     }
 
     // if clicked button is show_my_role ------------------------------------------------------------------------------------------------------------------------------
@@ -1284,7 +1655,6 @@ app.post("/interactions", async function (req, res) {
                   color: 0xff0000,
                 },
               ],
-              
             },
           });
         }

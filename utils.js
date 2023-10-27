@@ -89,11 +89,38 @@ export function getMessageData(responseToken) {
   }
 }
 
+// create interaction response using "POST"
+export async function createMessage(interactionId, interactionToken, messageContent) {
+  try {
+    await DiscordRequest(`interactions/${interactionId}/${interactionToken}/callback`, {
+      method: "POST",
+      body: messageContent,
+    });
+  } catch (err) {
+    
+  }
+}
+
 // update parent message using "PATCH" method
 export async function updateMessage(responseToken, messageContent) {
   try {
     await DiscordRequest(
       `webhooks/${process.env.APP_ID}/${responseToken}/messages/@original`,
+      {
+        method: "PATCH",
+        body: messageContent.data,
+      }
+    );
+  } catch (err) {
+    console.error("Error updating message:", err);
+  }
+}
+
+// update parent message using "PATCH" method
+export async function updateFollowUpMessage(responseToken, messageId, messageContent) {
+  try {
+    await DiscordRequest(
+      `webhooks/${process.env.APP_ID}/${responseToken}/messages/${messageId}`,
       {
         method: "PATCH",
         body: messageContent.data,

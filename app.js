@@ -629,6 +629,13 @@ app.post("/interactions", async function (req, res) {
             console.log("Location assigned!");
           }
 
+          // get 1 random user to start asking
+          console.log("joined user IDs:", joinedUsersUserIds);
+          const shuffledJoinedUsersFirstTurn = await shuffleArray(joinedUsersUserIds);
+          console.log("shuffled joined user IDs:", shuffledJoinedUsersFirstTurn);
+          const randomPlayerToStart = shuffledJoinedUsersFirstTurn[2];
+          console.log("Random user IDs:", randomPlayerToStart);
+
           // get message ID of parent message
           const parentMessageId = req.body.message.message_reference.message_id;
 
@@ -662,7 +669,7 @@ app.post("/interactions", async function (req, res) {
                 {
                   type: "rich",
                   title: "Game running",
-                  description: `The game hosted by <@${hostUserId}> is currently running ...`,
+                  description: `The game hosted by <@${hostUserId}> is currently running ...\n\n<@${randomPlayerToStart}> will start asking a question!`,
                   color: 0xff00bb,
                 },
               ],
@@ -731,8 +738,9 @@ app.post("/interactions", async function (req, res) {
             console.log("Location assigned!");
           }
 
-          // get response token
-          const initialResponseToken = await getResponseToken(db, hostUserId);
+           // get 1 random user to start asking
+           const shuffledJoinedUsersFirstTurn = await shuffleArray(joinedUsersUserIds);
+           const randomPlayerToStart = shuffledJoinedUsersFirstTurn[1];
 
           // get message ID of parent message
           const parentMessageId = req.body.message.message_reference.message_id;
@@ -767,7 +775,7 @@ app.post("/interactions", async function (req, res) {
                 {
                   type: "rich",
                   title: "Game running",
-                  description: `The game hosted by <@${hostUserId}> is currently running ...`,
+                  description: `The game hosted by <@${hostUserId}> is currently running ...\n\n<@${randomPlayerToStart}> will start asking a question!`,
                   color: 0xff00bb,
                 },
               ],
@@ -835,8 +843,9 @@ app.post("/interactions", async function (req, res) {
             console.log("Location assigned!");
           }
 
-          // get response token
-          const initialResponseToken = await getResponseToken(db, hostUserId);
+           // get 1 random user to start asking
+           const shuffledJoinedUsersFirstTurn = await shuffleArray(joinedUsersUserIds);
+           const randomPlayerToStart = shuffledJoinedUsersFirstTurn[3];
 
           // get message ID of parent message
           const parentMessageId = req.body.message.message_reference.message_id;
@@ -871,7 +880,7 @@ app.post("/interactions", async function (req, res) {
                 {
                   type: "rich",
                   title: "Game running",
-                  description: `The game hosted by <@${hostUserId}> is currently running ...`,
+                  description: `The game hosted by <@${hostUserId}> is currently running ...\n\n<@${randomPlayerToStart}> will start asking a question!`,
                   color: 0xff00bb,
                 },
               ],

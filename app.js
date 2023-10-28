@@ -326,6 +326,104 @@ app.post("/interactions", async function (req, res) {
       });
     }
 
+    // role command ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+    else if (name === "role") {
+      // fetch the role chosen by the user
+      const roleChoice = data.options[0].value;
+
+      switch (roleChoice) {
+        case "role_spy":
+          res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+              content: "",
+              flags: InteractionResponseFlags.EPHEMERAL,
+              embeds: [
+                {
+                  type: "rich",
+                  title: `**The Spy role**`,
+                  description: `At the start of the game the spy will get a list of 10 possible locations and – when gaming with 8 people or more – the names of the other spies. A spy can win when they either guess the secret location or survive until there’s only one investigator left. Tread carefully and don’t raise any suspicions!`,
+                  color: 0xff00bb,
+                },
+              ],
+            },
+          });
+          break;
+        case "role_mole":
+          res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+              content: "",
+              flags: InteractionResponseFlags.EPHEMERAL,
+              embeds: [
+                {
+                  type: "rich",
+                  title: `**The Mole role**`,
+                  description: `At the start of the game a mole will receive a list of 3 locations as well as a gun with one single bullet, but they don’t get any intel on the other players. The mole’s goal is to help the spy (or spies) in figuring out the secret location. When the mole feels like a player is getting too close to voting a spy out – or when the mole gets voted out -  they may choose to use their one bullet and kill the investigator. Try and figure out who the spy is early on and the mole may pull all the focus on themselves!`,
+                  color: 0xff00bb,
+                },
+              ],
+            },
+          });
+          break;
+        case "role_investigator":
+          res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+              content: "",
+              flags: InteractionResponseFlags.EPHEMERAL,
+              embeds: [
+                {
+                  type: "rich",
+                  title: `**The Investigator role**`,
+                  description: `When the game starts, every investigator will receive the secret location, but they don’t know anything about the other players. By asking questions about the location will confirm the other players’ roles and might reveal the spy. An investigator can win the game by spotting the spy, while keeping the location a secret!`,
+                  color: 0xff00bb,
+                },
+              ],
+            },
+          });
+          break;
+      }
+    }
+
+    // info command ---------------------------------------------------------------------------------------------------------------------------------------------------
+    else if (name === "info") {
+      // send info message
+      return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: "",
+          flags: InteractionResponseFlags.EPHEMERAL,
+          embeds: [
+            {
+              type: "rich",
+              title: `**Information about the game**`,
+              description: `The following configurations are currently available for Spot the Spy:\n
+              5 players - 1 spy and 4 investigators
+              6 players - 1 spy, 1 mole and 4 investigators
+              7 players - 1 spy, 1 mole and 5 investigators
+              8 players - 2 spies, 1 mole and 5 investigators
+              9 players - 2 spies, 1 mole and 6 investigators
+              10 players - 2 spies, 1 mole and 7 investigators`,
+              color: 0xff00bb,
+            },
+          ],
+        },
+      });
+    }
+
+    // help command ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+    else if (name === "help") {
+      // send help message
+      return res.send({
+        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        data: {
+          content: "If you ever need any help with the game or the bot, please visit us at https://discord.gg/FgY5JPqJ6v \n\nOur devs are here to help you!",
+          flags: InteractionResponseFlags.EPHEMERAL,
+        },
+      });
+    }
+
     // database_test command
     else if (name === "database_test") {
       db.run(
@@ -631,8 +729,13 @@ app.post("/interactions", async function (req, res) {
 
           // get 1 random user to start asking
           console.log("joined user IDs:", joinedUsersUserIds);
-          const shuffledJoinedUsersFirstTurn = await shuffleArray(joinedUsersUserIds);
-          console.log("shuffled joined user IDs:", shuffledJoinedUsersFirstTurn);
+          const shuffledJoinedUsersFirstTurn = await shuffleArray(
+            joinedUsersUserIds
+          );
+          console.log(
+            "shuffled joined user IDs:",
+            shuffledJoinedUsersFirstTurn
+          );
           const randomPlayerToStart = shuffledJoinedUsersFirstTurn[2];
           console.log("Random user IDs:", randomPlayerToStart);
 
@@ -738,9 +841,11 @@ app.post("/interactions", async function (req, res) {
             console.log("Location assigned!");
           }
 
-           // get 1 random user to start asking
-           const shuffledJoinedUsersFirstTurn = await shuffleArray(joinedUsersUserIds);
-           const randomPlayerToStart = shuffledJoinedUsersFirstTurn[1];
+          // get 1 random user to start asking
+          const shuffledJoinedUsersFirstTurn = await shuffleArray(
+            joinedUsersUserIds
+          );
+          const randomPlayerToStart = shuffledJoinedUsersFirstTurn[1];
 
           // get message ID of parent message
           const parentMessageId = req.body.message.message_reference.message_id;
@@ -843,9 +948,11 @@ app.post("/interactions", async function (req, res) {
             console.log("Location assigned!");
           }
 
-           // get 1 random user to start asking
-           const shuffledJoinedUsersFirstTurn = await shuffleArray(joinedUsersUserIds);
-           const randomPlayerToStart = shuffledJoinedUsersFirstTurn[3];
+          // get 1 random user to start asking
+          const shuffledJoinedUsersFirstTurn = await shuffleArray(
+            joinedUsersUserIds
+          );
+          const randomPlayerToStart = shuffledJoinedUsersFirstTurn[3];
 
           // get message ID of parent message
           const parentMessageId = req.body.message.message_reference.message_id;
@@ -1192,110 +1299,111 @@ app.post("/interactions", async function (req, res) {
       //}
     }
 
-        // end game button----------------------------------------------------------------------------------------------------------------------------------------------
-        else if (componentId.startsWith("end_game_button_")) {
-          // fetch game ID associated with this button
-          const gameId = componentId.replace("end_game_button_", "");
-    
-          // get this active game's data
-          const activeGameData = await getActiveGames(db, gameId);
-          const hostUserId = activeGameData[0].host_user;
-    
-          // check if the person who clicks the button is the host
-          const userIsHost = activeGameData.some(
-            (game) => game.host_user === userId
-          );
-          // user is not host
-          if (!userIsHost) {
-            // send a message saying you are not the host to cancel
-            return res.send({
-              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-              data: {
-                content: ``,
-                flags: InteractionResponseFlags.EPHEMERAL,
-                embeds: [
-                  {
-                    type: "rich",
-                    title: "You are not the host of this game!",
-                    description: `Please refer to <@${hostUserId}>`,
-                    color: 0xff0000,
-                  },
-                ],
+    // end game button----------------------------------------------------------------------------------------------------------------------------------------------
+    else if (componentId.startsWith("end_game_button_")) {
+      // fetch game ID associated with this button
+      const gameId = componentId.replace("end_game_button_", "");
+
+      // get this active game's data
+      const activeGameData = await getActiveGames(db, gameId);
+      const hostUserId = activeGameData[0].host_user;
+
+      // check if the person who clicks the button is the host
+      const userIsHost = activeGameData.some(
+        (game) => game.host_user === userId
+      );
+      // user is not host
+      if (!userIsHost) {
+        // send a message saying you are not the host to cancel
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: ``,
+            flags: InteractionResponseFlags.EPHEMERAL,
+            embeds: [
+              {
+                type: "rich",
+                title: "You are not the host of this game!",
+                description: `Please refer to <@${hostUserId}>`,
+                color: 0xff0000,
               },
-            });
-          }
-    
-          // user is host
-          else {
-            // get interaction ID of this interaction (button)
-            const interactionId = req.body.id;
-    
-            // get interaction token
-            const interactionToken = req.body.token;
-    
-            // message ID of this message
-            const messageId = req.body.message.id;
-    
-            // insert interaction (message) data to database
-            await insertMessageData(
-              db,
-              messageId,
-              req.body.channel.id,
-              hostUserId,
-              interactionToken
-            );
-    
-            // create follow up message content
-            const followUpMessageContent = {
-              type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-              data: {
-                content: ``,
-                flags: InteractionResponseFlags.EPHEMERAL,
+            ],
+          },
+        });
+      }
+
+      // user is host
+      else {
+        // get interaction ID of this interaction (button)
+        const interactionId = req.body.id;
+
+        // get interaction token
+        const interactionToken = req.body.token;
+
+        // message ID of this message
+        const messageId = req.body.message.id;
+
+        // insert interaction (message) data to database
+        await insertMessageData(
+          db,
+          messageId,
+          req.body.channel.id,
+          hostUserId,
+          interactionToken
+        );
+
+        // create follow up message content
+        const followUpMessageContent = {
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: ``,
+            flags: InteractionResponseFlags.EPHEMERAL,
+            components: [
+              {
+                type: 1,
                 components: [
                   {
-                    type: 1,
-                    components: [
-                      {
-                        type: 2,
-                        custom_id: `end_game_agree_button_${gameId}_${messageId}`,
-                        style: 3,
-                        emoji: {
-                          id: null,
-                          name: "✔️",
-                        },
-                      },
-                      {
-                        type: 2,
-                        custom_id: `end_game_refuse_button`,
-                        style: 4,
-                        emoji: {
-                          id: null,
-                          name: "✖️",
-                        },
-                      },
-                    ],
+                    type: 2,
+                    custom_id: `end_game_agree_button_${gameId}_${messageId}`,
+                    style: 3,
+                    emoji: {
+                      id: null,
+                      name: "✔️",
+                    },
                   },
-                ],
-                embeds: [
                   {
-                    type: "rich",
-                    title: "Are you sure that your game is finished and you want to end it?",
-                    description: ``,
-                    color: 0xff00bb,
+                    type: 2,
+                    custom_id: `end_game_refuse_button`,
+                    style: 4,
+                    emoji: {
+                      id: null,
+                      name: "✖️",
+                    },
                   },
                 ],
               },
-            };
-    
-            await createMessage(
-              interactionId,
-              interactionToken,
-              followUpMessageContent
-            );
-          }
-        }
+            ],
+            embeds: [
+              {
+                type: "rich",
+                title:
+                  "Are you sure that your game is finished and you want to end it?",
+                description: ``,
+                color: 0xff00bb,
+              },
+            ],
+          },
+        };
 
-        // if clicked button is end_game_button_refuse -----------------------------------------------------------------------------------------------------------------
+        await createMessage(
+          interactionId,
+          interactionToken,
+          followUpMessageContent
+        );
+      }
+    }
+
+    // if clicked button is end_game_button_refuse -----------------------------------------------------------------------------------------------------------------
     else if (componentId.startsWith("end_game_refuse_button")) {
       // get response token from original message
       const token = await getResponseToken(db, userId);
@@ -1334,7 +1442,6 @@ app.post("/interactions", async function (req, res) {
 
     // if clicked button is "end game agree" ----------------------------------------------------------------------------------------------------------------------------------
     else if (componentId.startsWith("end_game_agree_button_")) {
-
       // fetch combi string with the parent message ID and game ID
       const combiString = componentId.replace("end_game_agree_button_", "");
 
@@ -1369,8 +1476,8 @@ app.post("/interactions", async function (req, res) {
       }*/
       // user who clicked "cancel" is host
       //else {
-        // fetch response token from parent message ID from the Host User
-        /*const responseTokenFromParentMessage = await getResponseToken(
+      // fetch response token from parent message ID from the Host User
+      /*const responseTokenFromParentMessage = await getResponseToken(
           db,
           hostUserId
         );
@@ -1379,46 +1486,46 @@ app.post("/interactions", async function (req, res) {
           return;
         }*/
 
-        // delete active game from database table active_games
-        await deleteActiveGame(db, gameId, hostUserId);
-        console.log("Active game deleted!");
+      // delete active game from database table active_games
+      await deleteActiveGame(db, gameId, hostUserId);
+      console.log("Active game deleted!");
 
-        // delete joined users from this game
-        await deleteJoinedUsers(db, gameId);
-        console.log("Joined users deleted!");
+      // delete joined users from this game
+      await deleteJoinedUsers(db, gameId);
+      console.log("Joined users deleted!");
 
-        // delete locations from this game
-        await deleteLocations(db, gameId);
+      // delete locations from this game
+      await deleteLocations(db, gameId);
 
-        // update message
-        const updateParentMessageContent = {
-          data: {
-            content: ``,
-            components: [],
-            embeds: [
-              {
-                type: "rich",
-                title: "Game canceled",
-                description: `<@${hostUserId}> ended this game.\n\n**GG**\n\nUse the command /start to play again!`,
-                color: 0xff00bb,
-              },
-            ],
-          },
-        };
-        //await updateMessage(responseTokenFromParentMessage, updateParentMessageContent);
-        await updateMessageNew(
-          req.body.channel.id,
-          parentMessageId,
-          updateParentMessageContent
-        );
+      // update message
+      const updateParentMessageContent = {
+        data: {
+          content: ``,
+          components: [],
+          embeds: [
+            {
+              type: "rich",
+              title: "Game canceled",
+              description: `<@${hostUserId}> ended this game.\n\n**GG**\n\nUse the command /start to play again!`,
+              color: 0xff00bb,
+            },
+          ],
+        },
+      };
+      //await updateMessage(responseTokenFromParentMessage, updateParentMessageContent);
+      await updateMessageNew(
+        req.body.channel.id,
+        parentMessageId,
+        updateParentMessageContent
+      );
 
-        // fetch token from parent message
-        const token = await getResponseToken(db, hostUserId);
+      // fetch token from parent message
+      const token = await getResponseToken(db, hostUserId);
 
-        // fetch message ID of this message
-        const messageId = req.body.message.id;
+      // fetch message ID of this message
+      const messageId = req.body.message.id;
 
-        // create upate message content
+      // create upate message content
       const updateMessageContent = {
         data: {
           content: ``,
@@ -1440,10 +1547,10 @@ app.post("/interactions", async function (req, res) {
       // Delete the dataset with the message and token after updating the message (it's not needed anymore)
       await deleteMessageWithToken(db, hostUserId);
 
-        // send response to discord
-        return res.send({
-          type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
-        });
+      // send response to discord
+      return res.send({
+        type: InteractionResponseType.DEFERRED_UPDATE_MESSAGE,
+      });
       //}
     }
 

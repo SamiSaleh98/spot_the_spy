@@ -49,6 +49,49 @@ const CANCEL_COMMAND = {
   type: 1,
 };
 
+// info command
+const INFO_COMMAND = {
+  name: `info`,
+  description: `Get some information about the game`,
+  type: 1,
+};
+
+// help command
+const HELP_COMMAND = {
+  name: `help`,
+  description: `Get help with the game or the bot`,
+  type: 1,
+};
+
+// role info command
+const ROLE_COMMAND = {
+  name: `role`,
+  description: `Get intel about each role players get`,
+  type: 1,
+  options: [
+    {
+      type: 3,
+      name: 'option',
+      description: `Choose the role you want to know about`,
+      required: true,
+      choices: [
+        {
+          name: "Spy",
+          value: "role_spy",
+        },
+        {
+          name: "Mole",
+          value: "role_mole",
+        },
+        {
+          name: "Investigator",
+          value: "role_investigator",
+        },
+      ],
+    },
+  ],
+};
+
 // Test Database command
 const TEST_DATABASE_COMMAND = {
   name: 'database_test',
@@ -56,6 +99,6 @@ const TEST_DATABASE_COMMAND = {
   type: 1,
 };
 
-const ALL_COMMANDS = [TEST_COMMAND, START_COMMAND, CANCEL_COMMAND, TEST_DATABASE_COMMAND];
+const ALL_COMMANDS = [TEST_COMMAND, START_COMMAND, CANCEL_COMMAND, INFO_COMMAND, HELP_COMMAND, ROLE_COMMAND, TEST_DATABASE_COMMAND];
 
 InstallGlobalCommands(process.env.APP_ID, ALL_COMMANDS);

@@ -1,0 +1,8 @@
+version: '3'
+services:
+  spot-the-spy:
+    build:
+      context: . # This is the build context, which is the current directory
+      dockerfile: Dockerfile
+    ports:
+      - "8080:3000" # Map port 3000 in the container to port 8080 on the host

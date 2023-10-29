@@ -7,3 +7,5 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:3000" # Map port 3000 in the container to port 8080 on the host
+    volumes:
+      - ./database.sqlite3:/app/database.sqlite3
